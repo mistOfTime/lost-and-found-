@@ -1,5 +1,6 @@
 # Never commit real credentials
-# If you fork this project, replace keys in supabase-config.js before committing
+# Fill in your keys locally but never push supabase-config.js
+assets/js/supabase-config.js
 
 # OS
 .DS_Store

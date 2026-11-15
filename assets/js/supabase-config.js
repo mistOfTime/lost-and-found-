@@ -5,8 +5,8 @@
    The secret key is NEVER placed in frontend code.
    ============================================================ */
 
-const SUPABASE_URL  = 'https://ctzoXlhkooaxexeneeo.supabase.co';
-const SUPABASE_ANON = 'sb_publishable_wpQdy_fVHzfm_Kwvm_gxIw_l2To1-Wn';
+const SUPABASE_URL  = 'YOUR_SUPABASE_PROJECT_URL';
+const SUPABASE_ANON = 'YOUR_SUPABASE_PUBLISHABLE_KEY';
 
 // Initialize Supabase client
 const { createClient } = supabase;

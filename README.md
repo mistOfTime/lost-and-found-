@@ -74,18 +74,18 @@ wildcat-lost-found/
 
 ### Step 3 — Configure Your API Keys
 
-1. In Supabase, go to **Settings** → **API**.
+1. In Supabase, go to **Settings** → **API Keys**.
 2. Copy:
    - **Project URL** (e.g. `https://xyzabc.supabase.co`)
-   - **anon / public** key (starts with `eyJ...`)
+   - **Publishable** key (starts with `sb_publishable_...`)
 3. Open `assets/js/supabase-config.js` and replace the placeholder values:
 
 ```javascript
 const SUPABASE_URL  = 'https://YOUR-PROJECT-ID.supabase.co';
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
+const SUPABASE_ANON = 'sb_publishable_...';
 ```
 
-> ⚠️ **Never** use the `service_role` key in your frontend. Only use the `anon` (public) key.
+> ⚠️ **Never** commit real keys to GitHub. Add `supabase-config.js` to `.gitignore` or use environment variables if deploying publicly.
 
 ### Step 4 — Configure Authentication
 
