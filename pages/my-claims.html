@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Claims — Wildcat Lost &amp; Found</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="../assets/css/style.css" />
+</head>
+<body>
+<nav class="navbar wlf-navbar navbar-expand-lg" style="position:sticky;top:0;z-index:1030">
+  <div class="container">
+    <a class="navbar-brand" href="../index.html">
+      <div class="brand-logo"><i class="fa-solid fa-paw"></i></div>
+      <div class="brand-text">
+        <span class="brand-title">WILDCAT LOST &amp; FOUND</span>
+        <span class="brand-sub">CIT-U Campus System</span>
+      </div>
+    </a>
+    <div class="ms-auto d-flex gap-2">
+      <a id="dashboard-link" href="#" class="btn-nav-login">← Dashboard</a>
+    </div>
+  </div>
+</nav>
+
+<div style="background:linear-gradient(135deg,var(--navy),var(--primary-dark));padding:2rem 0 1.2rem">
+  <div class="container">
+    <h1 style="color:#fff;font-weight:800;font-size:1.8rem;margin-bottom:.3rem">
+      <i class="fa-solid fa-shield-check me-2" style="color:var(--accent)"></i>My Claims
+    </h1>
+    <p style="color:var(--gray-400);margin:0">Track the status of your ownership claims.</p>
+  </div>
+</div>
+
+<div class="container py-4">
+  <div id="claims-container">
+    <div class="text-center py-5" style="color:var(--gray-400)">
+      <div class="loader-spin mx-auto mb-3" style="width:36px;height:36px;border:3px solid var(--gray-200);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite"></div>
+      Loading…
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../assets/js/supabase-config.js"></script>
+<script src="../assets/js/app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  const auth = await requireAuth(['student', 'faculty', 'admin']);
+  if (!auth) return;
+
+  document.getElementById('dashboard-link').href =
+    auth.profile.role === 'admin' ? '../dashboards/admin.html' :
+    auth.profile.role === 'faculty' ? '../dashboards/faculty.html' :
+    '../dashboards/student.html';
+
+  const { data, error } = await supabaseClient
+    .from('claims')
+    .select('id, status, ownership_proof, created_at, updated_at, items(id, name, type, category, location)')
+    .eq('claimant_id', auth.user.id)
+    .order('created_at', { ascending: false });
+
+  const container = document.getElementById('claims-container');
+  if (error) { container.innerHTML = `<div class="text-center py-4" style="color:var(--danger)">Failed to load claims.</div>`; return; }
+  if (!data || data.length === 0) {
+    container.innerHTML = `
+      <div class="text-center py-5">
+        <i class="fa-solid fa-shield-halved" style="font-size:3rem;color:var(--gray-300)"></i>
+        <p class="mt-3" style="color:var(--gray-500)">You haven't submitted any claims yet.</p>
+        <a href="lost-items.html" class="btn-outline-custom mt-1">Browse Found Items</a>
+      </div>`;
+    return;
+  }
+
+  const statusMeta = {
+    pending:  { icon:'fa-clock', color:'var(--warning)', bg:'rgba(245,158,11,.1)', label:'Under Review' },
+    approved: { icon:'fa-check-circle', color:'var(--success)', bg:'rgba(16,185,129,.1)', label:'Approved' },
+    rejected: { icon:'fa-times-circle', color:'var(--danger)', bg:'rgba(239,68,68,.1)', label:'Rejected' },
+    cancelled:{ icon:'fa-ban', color:'var(--gray-500)', bg:'rgba(100,116,139,.1)', label:'Cancelled' },
+  };
+
+  container.innerHTML = `<div class="row g-3">${data.map(claim => {
+    const meta = statusMeta[claim.status] || statusMeta.pending;
+    const item = claim.items;
+    return `
+      <div class="col-md-6 col-lg-4">
+        <div class="dash-card h-100">
+          <div class="dash-card-body">
+            <div class="d-flex align-items-center gap-3 mb-3 p-2 rounded" style="background:${meta.bg}">
+              <i class="fa-solid ${meta.icon}" style="color:${meta.color};font-size:1.3rem"></i>
+              <div>
+                <div style="font-size:.82rem;font-weight:700;color:${meta.color}">${meta.label}</div>
+                <div style="font-size:.74rem;color:var(--gray-500)">Last updated ${formatDate(claim.updated_at)}</div>
+              </div>
+            </div>
+            ${item ? `
+              <h6 style="font-weight:700;color:var(--navy);margin-bottom:.2rem">${sanitize(item.name)}</h6>
+              <div style="font-size:.8rem;color:var(--gray-500);margin-bottom:.6rem">
+                <span class="badge-${item.type}" style="font-size:.72rem">${capitalize(item.type)}</span>
+                <span class="ms-2"><i class="fa-solid fa-tag me-1"></i>${sanitize(item.category)}</span>
+              </div>` : '<p style="color:var(--gray-400);font-size:.85rem">Item details unavailable.</p>'}
+            <div style="font-size:.8rem;color:var(--gray-600);margin-bottom:.8rem;border-top:1px solid var(--gray-100);padding-top:.7rem">
+              <div style="font-weight:600;color:var(--gray-700);margin-bottom:.2rem">Your proof:</div>
+              <div style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">${sanitize(claim.ownership_proof || '—')}</div>
+            </div>
+            <div class="d-flex gap-2">
+              ${item ? `<a href="item-details.html?id=${item.id}" class="btn-outline-custom flex-fill justify-content-center py-1" style="font-size:.8rem">View Item</a>` : ''}
+              ${claim.status === 'pending' ? `<button onclick="cancelClaim('${claim.id}')" class="btn-danger-custom py-1 px-3" style="font-size:.8rem">Cancel</button>` : ''}
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }).join('')}</div>`;
+});
+
+async function cancelClaim(id) {
+  if (!confirm('Cancel this claim?')) return;
+  const { error } = await supabaseClient.from('claims').update({ status: 'cancelled' }).eq('id', id);
+  if (error) { showToast('Failed to cancel claim.', 'error'); return; }
+  showToast('Claim cancelled.', 'info');
+  setTimeout(() => location.reload(), 1000);
+}
+
+function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+</script>
+</body>
+</html>

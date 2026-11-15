@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Faculty Dashboard — Wildcat Lost &amp; Found</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="../assets/css/style.css" />
+</head>
+<body>
+
+<nav class="wlf-navbar navbar navbar-expand-lg" style="position:sticky;top:0;z-index:1030">
+  <div class="container-fluid px-3">
+    <button id="sidebar-toggle" class="border-0 bg-transparent me-2 d-lg-none" style="color:#fff;font-size:1.1rem">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+    <a class="navbar-brand" href="../index.html">
+      <div class="brand-logo"><i class="fa-solid fa-paw"></i></div>
+      <div class="brand-text">
+        <span class="brand-title">WILDCAT LOST &amp; FOUND</span>
+        <span class="brand-sub">Faculty Portal</span>
+      </div>
+    </a>
+    <div class="ms-auto d-flex align-items-center gap-3">
+      <a href="../pages/notifications.html" style="position:relative;color:var(--gray-300);font-size:1.1rem;text-decoration:none">
+        <i class="fa-solid fa-bell"></i>
+        <span id="notif-badge" style="position:absolute;top:-4px;right:-5px;background:var(--danger);color:#fff;font-size:.6rem;width:16px;height:16px;border-radius:50%;display:none;align-items:center;justify-content:center;font-weight:700">0</span>
+      </a>
+      <div class="dropdown">
+        <button class="btn border-0 d-flex align-items-center gap-2 p-0" data-bs-toggle="dropdown">
+          <div id="nav-avatar" class="user-avatar" style="font-size:.8rem;background:var(--accent);color:var(--navy)">FC</div>
+          <span id="nav-name" style="color:var(--white);font-size:.88rem;font-weight:500">Faculty</span>
+          <i class="fa-solid fa-chevron-down" style="color:var(--gray-400);font-size:.7rem"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow" style="border:none;border-radius:var(--radius);min-width:170px;padding:.4rem">
+          <li><a class="dropdown-item" href="../pages/profile.html" style="font-size:.88rem;border-radius:var(--radius-sm)"><i class="fa-solid fa-user me-2 text-muted"></i>My Profile</a></li>
+          <li><hr class="dropdown-divider my-1" /></li>
+          <li><a class="dropdown-item text-danger" href="#" data-action="signout" style="font-size:.88rem;border-radius:var(--radius-sm)"><i class="fa-solid fa-right-from-bracket me-2"></i>Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+<div class="dashboard-wrapper">
+  <aside id="app-sidebar" class="sidebar">
+    <div class="sidebar-brand">
+      <div class="sb-logo" style="background:var(--accent);color:var(--navy)"><i class="fa-solid fa-chalkboard-user"></i></div>
+      <div class="sb-info">
+        <div class="sb-name" id="sb-name">Faculty</div>
+        <div class="sb-role">Faculty Member</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-title">Main</div>
+      <a class="sidebar-link active" href="faculty.html"><i class="fa-solid fa-gauge"></i>Dashboard</a>
+      <a class="sidebar-link" href="../pages/lost-items.html"><i class="fa-solid fa-magnifying-glass"></i>Lost Items</a>
+      <a class="sidebar-link" href="../pages/found-items.html"><i class="fa-solid fa-box-open"></i>Found Items</a>
+
+      <div class="sidebar-section-title">My Activity</div>
+      <a class="sidebar-link" href="../pages/my-reports.html"><i class="fa-solid fa-file-lines"></i>My Reports</a>
+      <a class="sidebar-link" href="../pages/my-claims.html"><i class="fa-solid fa-shield-check"></i>My Claims</a>
+
+      <div class="sidebar-section-title">Communication</div>
+      <a class="sidebar-link" href="../pages/notifications.html"><i class="fa-solid fa-bell"></i>Notifications</a>
+      <a class="sidebar-link" href="../pages/messages.html"><i class="fa-solid fa-comments"></i>Messages</a>
+
+      <div class="sidebar-section-title">Account</div>
+      <a class="sidebar-link" href="../pages/profile.html"><i class="fa-solid fa-user-circle"></i>Profile</a>
+      <a class="sidebar-link" href="#" data-action="signout"><i class="fa-solid fa-right-from-bracket"></i>Logout</a>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <div class="page-header d-flex justify-content-between align-items-start">
+      <div>
+        <h1>Faculty Dashboard</h1>
+        <p id="welcome-sub">Welcome back! Here's what's happening with your account.</p>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="../pages/report-item.html?type=lost" class="btn-primary-custom">
+          <i class="fa-solid fa-plus"></i> Report Lost
+        </a>
+        <a href="../pages/report-item.html?type=found" class="btn-outline-custom">
+          <i class="fa-solid fa-box-open"></i> Report Found
+        </a>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-md-3">
+        <div class="stat-card">
+          <div class="stat-icon purple"><i class="fa-solid fa-file-lines"></i></div>
+          <div class="stat-info"><h3 id="stat-my-reports">—</h3><p>My Reports</p></div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card">
+          <div class="stat-icon green"><i class="fa-solid fa-shield-check"></i></div>
+          <div class="stat-info"><h3 id="stat-my-claims">—</h3><p>My Claims</p></div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card">
+          <div class="stat-icon orange"><i class="fa-solid fa-bell"></i></div>
+          <div class="stat-info"><h3 id="stat-unread-notifs">—</h3><p>Unread Notifications</p></div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card">
+          <div class="stat-icon blue"><i class="fa-solid fa-box-check"></i></div>
+          <div class="stat-info"><h3 id="stat-returned">—</h3><p>Returned Items</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-lg-8">
+        <div class="dash-card">
+          <div class="dash-card-header">
+            <h5><i class="fa-solid fa-clock-rotate-left me-2 text-primary"></i>My Recent Reports</h5>
+            <a href="../pages/my-reports.html" style="font-size:.82rem;color:var(--primary);font-weight:500">View All →</a>
+          </div>
+          <div id="recent-items-list" style="max-height:400px;overflow-y:auto">
+            <div class="text-center py-4" style="color:var(--gray-400);font-size:.88rem">Loading…</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="dash-card mb-3">
+          <div class="dash-card-header"><h5><i class="fa-solid fa-bolt me-2 text-warning"></i>Quick Actions</h5></div>
+          <div class="dash-card-body">
+            <div class="d-flex flex-column gap-2">
+              <a href="../pages/report-item.html?type=lost" class="btn-primary-custom justify-content-start"><i class="fa-solid fa-camera"></i>Report Lost Item</a>
+              <a href="../pages/report-item.html?type=found" class="btn-outline-custom justify-content-start" style="background:rgba(212,175,55,.08);border-color:var(--accent);color:var(--accent-dark)"><i class="fa-solid fa-box-open"></i>Report Found Item</a>
+              <a href="../pages/lost-items.html" class="btn-outline-custom justify-content-start"><i class="fa-solid fa-magnifying-glass"></i>Browse Items</a>
+              <a href="../pages/messages.html" class="btn-outline-custom justify-content-start" style="background:rgba(128,0,0,.06);border-color:var(--primary);color:var(--primary)"><i class="fa-solid fa-headset"></i>Contact Admin</a>
+            </div>
+          </div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-header">
+            <h5><i class="fa-solid fa-bell me-2" style="color:var(--warning)"></i>Recent Notifications</h5>
+            <a href="../pages/notifications.html" style="font-size:.82rem;color:var(--primary);font-weight:500">View All →</a>
+          </div>
+          <div id="recent-notifs" style="max-height:220px;overflow-y:auto">
+            <div class="text-center py-3" style="color:var(--gray-400);font-size:.85rem">Loading…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../assets/js/supabase-config.js"></script>
+<script src="../assets/js/app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  showLoader();
+  const auth = await requireAuth(['faculty']);
+  if (!auth) return;
+  const { user, profile } = auth;
+  hideLoader();
+
+  document.getElementById('nav-avatar').textContent = getInitials(profile.full_name);
+  document.getElementById('nav-name').textContent   = profile.full_name;
+  document.getElementById('sb-name').textContent    = profile.full_name;
+  document.getElementById('welcome-sub').textContent = `Welcome back, ${profile.full_name.split(' ')[0]}! Here's what's happening.`;
+
+  const [reportsRes, claimsRes, notifsRes] = await Promise.all([
+    supabaseClient.from('items').select('*',{ count:'exact', head:true }).eq('reporter_id', user.id),
+    supabaseClient.from('claims').select('*',{ count:'exact', head:true }).eq('claimant_id', user.id),
+    supabaseClient.from('notifications').select('*',{ count:'exact', head:true }).eq('user_id', user.id).eq('is_read', false),
+  ]);
+  document.getElementById('stat-my-reports').textContent    = reportsRes.count  ?? 0;
+  document.getElementById('stat-my-claims').textContent     = claimsRes.count   ?? 0;
+  document.getElementById('stat-unread-notifs').textContent = notifsRes.count   ?? 0;
+  document.getElementById('stat-returned').textContent      = 0;
+
+  // Recent reports
+  const { data: items } = await supabaseClient.from('items').select('id,name,type,status,category,created_at').eq('reporter_id', user.id).order('created_at',{ascending:false}).limit(8);
+  const list = document.getElementById('recent-items-list');
+  if (!items || items.length === 0) {
+    list.innerHTML = `<div class="text-center py-4"><i class="fa-solid fa-inbox" style="font-size:2rem;color:var(--gray-300)"></i><p class="mt-2" style="color:var(--gray-500);font-size:.85rem">No items reported yet.</p><a href="../pages/report-item.html" class="btn-primary-custom" style="font-size:.82rem;padding:.4rem 1rem"><i class="fa-solid fa-plus"></i> Report Item</a></div>`;
+  } else {
+    list.innerHTML = items.map(item => `
+      <div class="d-flex align-items-center gap-3 px-3 py-2 border-bottom" style="cursor:pointer" onclick="window.location.href='../pages/item-details.html?id=${item.id}'">
+        <div style="width:38px;height:38px;border-radius:var(--radius-sm);background:${item.type==='lost'?'rgba(239,68,68,.1)':'rgba(16,185,129,.1)'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <i class="fa-solid fa-${item.type==='lost'?'magnifying-glass':'box-open'}" style="color:${item.type==='lost'?'var(--danger)':'var(--success)'}"></i>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:.88rem;font-weight:600;color:var(--gray-800);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${sanitize(item.name)}</div>
+          <div style="font-size:.76rem;color:var(--gray-500)">${item.type==='lost'?'Lost':'Found'} • ${formatDate(item.created_at)}</div>
+        </div>
+        <span class="badge-${item.status||item.type}">${(item.status||item.type).charAt(0).toUpperCase()+(item.status||item.type).slice(1)}</span>
+      </div>`).join('');
+  }
+
+  // Recent notifs
+  const { data: notifs } = await supabaseClient.from('notifications').select('id,message,is_read,created_at').eq('user_id', user.id).order('created_at',{ascending:false}).limit(4);
+  const notifContainer = document.getElementById('recent-notifs');
+  notifContainer.innerHTML = !notifs || notifs.length === 0
+    ? `<div class="text-center py-3" style="color:var(--gray-400);font-size:.85rem">No notifications yet.</div>`
+    : notifs.map(n => `<div class="notification-item ${n.is_read?'':'unread'}"><div class="notif-icon"><i class="fa-solid fa-bell"></i></div><div class="notif-content"><div class="notif-title">${sanitize(n.message)}</div><div class="notif-time">${timeAgo(n.created_at)}</div></div></div>`).join('');
+
+  updateNotifBadge();
+  listenForNotifications();
+});
+</script>
+</body>
+</html>

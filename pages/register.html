@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register — Wildcat Lost &amp; Found</title>
+  <!-- Security headers -->
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' 'unsafe-inline' cdn.jsdelivr.net cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' cdn.jsdelivr.net cdnjs.cloudflare.com; font-src 'self' cdnjs.cloudflare.com; img-src 'self' data: *.supabase.co; connect-src 'self' *.supabase.co; frame-ancestors 'none';">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="X-Frame-Options" content="DENY">
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="../assets/css/style.css" />
+</head>
+<body>
+
+<div class="auth-page">
+  <!-- Left branding panel -->
+  <div class="col-lg-5 d-none d-lg-flex auth-left">
+    <div class="auth-left-content">
+      <span class="auth-paw"><i class="fa-solid fa-paw"></i></span>
+      <h2>WILDCAT<br/>LOST &amp; FOUND</h2>
+      <p>Join our community!<br/>Help keep our campus<br/>safe and connected.</p>
+
+      <div class="mt-4" style="display:flex;flex-direction:column;gap:.7rem">
+        <div style="display:flex;align-items:center;gap:.8rem;color:rgba(255,255,255,.8);font-size:.88rem">
+          <i class="fa-solid fa-users" style="color:rgba(255,255,255,.6);width:20px"></i>
+          Students &amp; Faculty Welcome
+        </div>
+        <div style="display:flex;align-items:center;gap:.8rem;color:rgba(255,255,255,.8);font-size:.88rem">
+          <i class="fa-solid fa-id-card" style="color:rgba(255,255,255,.6);width:20px"></i>
+          CIT-U ID Verification
+        </div>
+        <div style="display:flex;align-items:center;gap:.8rem;color:rgba(255,255,255,.8);font-size:.88rem">
+          <i class="fa-solid fa-lock" style="color:rgba(255,255,255,.6);width:20px"></i>
+          Secure &amp; Private
+        </div>
+      </div>
+
+      <p class="mt-5" style="font-size:.78rem;color:rgba(255,255,255,.45)">
+        Cebu Institute of Technology – University<br/>Official Campus System
+      </p>
+    </div>
+  </div>
+
+  <!-- Right form panel -->
+  <div class="col-12 col-lg-7 auth-right" style="overflow-y:auto;padding:2rem 1.5rem">
+    <div class="auth-card" style="max-width:480px;margin:auto">
+      <!-- Mobile logo -->
+      <div class="d-flex align-items-center gap-2 mb-3 d-lg-none">
+        <div style="width:40px;height:40px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--navy);font-size:1.1rem">
+          <i class="fa-solid fa-paw"></i>
+        </div>
+        <div>
+          <div style="font-size:.9rem;font-weight:800;color:var(--navy)">WILDCAT LOST &amp; FOUND</div>
+          <div style="font-size:.7rem;color:var(--gray-500)">CIT-U Campus System</div>
+        </div>
+      </div>
+
+      <h3>Create Account</h3>
+      <p class="auth-subtitle">Register to start using Wildcat Lost &amp; Found.</p>
+
+      <!-- Alert area -->
+      <div id="register-alert" style="display:none"></div>
+
+      <form id="register-form" novalidate>
+        <!-- Full name -->
+        <div class="form-group-custom">
+          <label class="form-label-custom" for="full-name">Full Name</label>
+          <div class="input-icon-wrap">
+            <i class="fa-solid fa-user input-icon"></i>
+            <input id="full-name" type="text" class="form-control-custom" placeholder="e.g. Juan Dela Cruz" autocomplete="name" />
+          </div>
+        </div>
+
+        <!-- Student/Faculty ID -->
+        <div class="form-group-custom">
+          <label class="form-label-custom" for="school-id">Student / Faculty ID</label>
+          <div class="input-icon-wrap">
+            <i class="fa-solid fa-id-badge input-icon"></i>
+            <input id="school-id" type="text" class="form-control-custom" placeholder="e.g. 20XX-XXXXX" />
+          </div>
+        </div>
+
+        <!-- Email -->
+        <div class="form-group-custom">
+          <label class="form-label-custom" for="reg-email">CIT-U Email Address</label>
+          <div class="input-icon-wrap">
+            <i class="fa-solid fa-envelope input-icon"></i>
+            <input id="reg-email" type="email" class="form-control-custom" placeholder="yourname@cit.edu" autocomplete="email" />
+          </div>
+        </div>
+
+        <!-- Department (optional) -->
+        <div class="form-group-custom">
+          <label class="form-label-custom" for="department">Department / Course <span style="font-weight:400;color:var(--gray-400)">(optional)</span></label>
+          <div class="input-icon-wrap">
+            <i class="fa-solid fa-building-columns input-icon"></i>
+            <input id="department" type="text" class="form-control-custom" placeholder="e.g. BS Computer Science" />
+          </div>
+        </div>
+
+        <!-- Password -->
+        <div class="form-group-custom">
+          <label class="form-label-custom" for="reg-password">Password</label>
+          <div class="input-icon-wrap">
+            <i class="fa-solid fa-lock input-icon"></i>
+            <input id="reg-password" type="password" class="form-control-custom" placeholder="At least 8 characters" autocomplete="new-password" />
+            <span class="input-icon-right" data-toggle-pw="reg-password"><i class="fa-solid fa-eye"></i></span>
+          </div>
+          <!-- Password strength -->
+          <div id="pw-strength-bar" style="margin-top:.4rem;height:4px;border-radius:99px;background:var(--gray-200);overflow:hidden">
+            <div id="pw-strength-fill" style="height:100%;width:0%;border-radius:99px;transition:width .3s,background .3s"></div>
+          </div>
+          <div id="pw-strength-text" style="font-size:.74rem;color:var(--gray-400);margin-top:.2rem"></div>
+        </div>
+
+        <!-- Confirm password -->
+        <div class="form-group-custom">
+          <label class="form-label-custom" for="confirm-password">Confirm Password</label>
+          <div class="input-icon-wrap">
+            <i class="fa-solid fa-lock input-icon"></i>
+            <input id="confirm-password" type="password" class="form-control-custom" placeholder="Re-enter your password" autocomplete="new-password" />
+            <span class="input-icon-right" data-toggle-pw="confirm-password"><i class="fa-solid fa-eye"></i></span>
+          </div>
+        </div>
+
+        <!-- Role selector — Admin role removed from public registration -->
+        <div class="form-group-custom">
+          <label class="form-label-custom">I am a:</label>
+          <div class="role-selector">
+            <div class="role-option">
+              <input type="radio" id="role-student" name="role" value="student" checked />
+              <label for="role-student"><i class="fa-solid fa-graduation-cap"></i>Student</label>
+            </div>
+            <div class="role-option">
+              <input type="radio" id="role-faculty" name="role" value="faculty" />
+              <label for="role-faculty"><i class="fa-solid fa-chalkboard-user"></i>Faculty</label>
+            </div>
+          </div>
+          <p style="font-size:.78rem;color:var(--gray-400);margin-top:.4rem">
+            <i class="fa-solid fa-circle-info me-1"></i>
+            Administrator accounts are created directly by existing administrators.
+          </p>
+        </div>
+
+        <!-- Terms -->
+        <div class="d-flex align-items-start gap-2 mb-4">
+          <input type="checkbox" id="terms" style="accent-color:var(--primary);width:15px;height:15px;margin-top:.2rem;cursor:pointer;flex-shrink:0" />
+          <label for="terms" style="font-size:.83rem;color:var(--gray-600);cursor:pointer;margin:0">
+            I agree to the <a href="#" style="font-weight:600">Terms of Service</a> and <a href="#" style="font-weight:600">Privacy Policy</a>.
+          </label>
+        </div>
+
+        <button type="submit" class="btn-primary-custom w-100 justify-content-center py-2" id="register-btn">
+          <span id="register-btn-text"><i class="fa-solid fa-user-plus me-1"></i>Register</span>
+          <span id="register-spinner" style="display:none"><span class="wlf-loader" style="border-color:rgba(255,255,255,.3);border-top-color:#fff"></span></span>
+        </button>
+
+        <p class="text-center mt-3" style="font-size:.88rem;color:var(--gray-500)">
+          Already have an account? <a href="login.html" style="font-weight:600">Login here</a>
+        </p>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../assets/js/supabase-config.js"></script>
+<script src="../assets/js/app.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  // Redirect if already logged in
+  const user = await getCurrentUser();
+  if (user) {
+    const profile = await getUserProfile(user.id);
+    if (profile) { redirectToDashboard(profile.role); return; }
+  }
+
+  // No admin role in public registration — no toggle needed
+
+  // Password strength meter
+  document.getElementById('reg-password').addEventListener('input', function () {
+    updateStrength(this.value);
+  });
+});
+
+function updateStrength(pw) {
+  let score = 0;
+  if (pw.length >= 8)  score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+
+  const fill   = document.getElementById('pw-strength-fill');
+  const text   = document.getElementById('pw-strength-text');
+  const levels = [
+    { pct: '25%', color: '#ef4444', label: 'Weak' },
+    { pct: '50%', color: '#f59e0b', label: 'Fair' },
+    { pct: '75%', color: '#3b82f6', label: 'Good' },
+    { pct: '100%',color: '#10b981', label: 'Strong' },
+  ];
+  const lvl = levels[Math.max(0, score - 1)];
+  if (pw.length === 0) { fill.style.width = '0%'; text.textContent = ''; return; }
+  fill.style.width      = lvl.pct;
+  fill.style.background = lvl.color;
+  text.textContent      = lvl.label;
+  text.style.color      = lvl.color;
+}
+
+/* ---------- Register form ---------- */
+document.getElementById('register-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  clearAllErrors('register-form');
+
+  const fullName  = document.getElementById('full-name').value.trim();
+  const schoolId  = document.getElementById('school-id').value.trim();
+  const email     = document.getElementById('reg-email').value.trim();
+  const dept      = document.getElementById('department').value.trim();
+  const password  = document.getElementById('reg-password').value;
+  const confirmPw = document.getElementById('confirm-password').value;
+  const role      = document.querySelector('input[name="role"]:checked').value;
+  // Whitelist: only student and faculty can self-register
+  const allowedRoles = ['student', 'faculty'];
+  if (!allowedRoles.includes(role)) {
+    showAlert(alertEl, 'Invalid role selected.', 'error');
+    return;
+  }
+  const terms     = document.getElementById('terms').checked;
+  const alertEl   = document.getElementById('register-alert');
+
+  // Validation
+  let valid = true;
+  if (!fullName)                  { showFieldError('full-name',       'Full name is required.');      valid = false; }
+  if (!schoolId)                  { showFieldError('school-id',       'School ID is required.');       valid = false; }
+  if (!email || !validateEmail(email)) { showFieldError('reg-email', 'Enter a valid email address.'); valid = false; }
+  if (!validatePassword(password)){ showFieldError('reg-password',    'Password must be at least 8 characters.'); valid = false; }
+  if (password !== confirmPw)     { showFieldError('confirm-password','Passwords do not match.');     valid = false; }
+  if (!terms) {
+    alertEl.className = 'alert-custom warning';
+    alertEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i><span>Please accept the Terms of Service and Privacy Policy.</span>';
+    alertEl.style.display = 'flex';
+    return;
+  }
+  if (!valid) return;
+
+  setLoading(true);
+  alertEl.style.display = 'none';
+
+  // 1. Create auth user
+  const { data: authData, error: authError } = await supabaseClient.auth.signUp({
+    email,
+    password,
+    options: {
+      data: { full_name: fullName, role, school_id: schoolId },
+    },
+  });
+
+  if (authError) {
+    setLoading(false);
+    showAlert(alertEl, authError.message, 'error');
+    return;
+  }
+
+  // 2. Insert profile row
+  const { error: profileError } = await supabaseClient.from('profiles').insert({
+    id:         authData.user.id,
+    full_name:  fullName,
+    school_id:  schoolId,
+    email,
+    department: dept || null,
+    role,
+    status:     role === 'admin' ? 'pending' : 'active',
+  });
+
+  setLoading(false);
+
+  if (profileError) {
+    // Auth user created but profile failed — still let them through
+    console.error('Profile insert error:', profileError.message);
+  }
+
+  // 3. Success
+  showAlert(alertEl, `Account created! ${authData.session ? 'Redirecting…' : 'Please check your email to confirm your account.'}`, 'success');
+
+  if (authData.session) {
+    setTimeout(() => redirectToDashboard(role), 1500);
+  }
+});
+
+function setLoading(loading) {
+  document.getElementById('register-btn-text').style.display  = loading ? 'none' : 'inline-flex';
+  document.getElementById('register-spinner').style.display   = loading ? 'inline-flex' : 'none';
+  document.getElementById('register-btn').disabled            = loading;
+}
+
+function showAlert(el, message, type) {
+  el.className = `alert-custom ${type}`;
+  const icon = type === 'error' ? 'fa-circle-xmark' : type === 'success' ? 'fa-circle-check' : 'fa-triangle-exclamation';
+  el.innerHTML = `<i class="fa-solid ${icon}"></i><span>${sanitize(message)}</span>`;
+  el.style.display = 'flex';
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Item Management — Wildcat Lost &amp; Found</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="../assets/css/style.css" />
+</head>
+<body>
+<nav class="navbar wlf-navbar navbar-expand-lg" style="position:sticky;top:0;z-index:1030">
+  <div class="container-fluid px-3">
+    <button id="sidebar-toggle" class="border-0 bg-transparent me-2 d-lg-none" style="color:#fff;font-size:1.1rem"><i class="fa-solid fa-bars"></i></button>
+    <a class="navbar-brand" href="../index.html">
+      <div class="brand-logo"><i class="fa-solid fa-paw"></i></div>
+      <div class="brand-text"><span class="brand-title">WILDCAT LOST &amp; FOUND</span><span class="brand-sub">Admin Panel</span></div>
+    </a>
+    <div class="ms-auto"><a href="../dashboards/admin.html" class="btn-nav-login">← Dashboard</a></div>
+  </div>
+</nav>
+<div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+<div class="dashboard-wrapper">
+  <aside id="app-sidebar" class="sidebar">
+    <div class="sidebar-brand">
+      <div class="sb-logo" style="background:var(--accent);color:var(--navy)"><i class="fa-solid fa-shield-halved"></i></div>
+      <div class="sb-info"><div class="sb-name" id="sb-name">Admin</div><div class="sb-role">Administrator</div></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-title">Management</div>
+      <a class="sidebar-link" href="users.html"><i class="fa-solid fa-users"></i>Users</a>
+      <a class="sidebar-link active" href="items.html"><i class="fa-solid fa-boxes-stacked"></i>Items</a>
+      <a class="sidebar-link" href="claims.html"><i class="fa-solid fa-shield-check"></i>Claims</a>
+      <a class="sidebar-link" href="reports.html"><i class="fa-solid fa-chart-bar"></i>Analytics</a>
+      <div class="sidebar-section-title">Account</div>
+      <a class="sidebar-link" href="../dashboards/admin.html"><i class="fa-solid fa-gauge"></i>Dashboard</a>
+      <a class="sidebar-link" href="#" data-action="signout"><i class="fa-solid fa-right-from-bracket"></i>Logout</a>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <div class="page-header"><h1>Item Management</h1><p>Approve, reject, and manage all item reports.</p></div>
+
+    <div class="dash-card mb-4">
+      <div class="dash-card-body">
+        <div class="row g-2">
+          <div class="col-md-4">
+            <div class="input-icon-wrap">
+              <i class="fa-solid fa-magnifying-glass input-icon"></i>
+              <input id="item-search" type="text" class="form-control-custom" placeholder="Search items…" />
+            </div>
+          </div>
+          <div class="col-md-2">
+            <select id="filter-type" class="form-control-custom">
+              <option value="">All Types</option>
+              <option value="lost">Lost</option>
+              <option value="found">Found</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <select id="filter-status" class="form-control-custom">
+              <option value="">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="lost">Approved Lost</option>
+              <option value="found">Approved Found</option>
+              <option value="claimed">Claimed</option>
+              <option value="returned">Returned</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <button class="btn-primary-custom w-100 justify-content-center" onclick="loadItems()">
+              <i class="fa-solid fa-filter"></i> Filter
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dash-card">
+      <div style="overflow-x:auto">
+        <table class="table-custom">
+          <thead>
+            <tr><th>Item</th><th>Type</th><th>Category</th><th>Location</th><th>Reporter</th><th>Date</th><th>Status</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="items-tbody">
+            <tr><td colspan="8" class="text-center py-4" style="color:var(--gray-400)">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../assets/js/supabase-config.js"></script>
+<script src="../assets/js/app.js"></script>
+<script>
+let _adminId = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const auth = await requireAuth(['admin']);
+  if (!auth) return;
+  _adminId = auth.user.id;
+  document.getElementById('sb-name').textContent = auth.profile.full_name;
+  await loadItems();
+
+  let d;
+  document.getElementById('item-search').addEventListener('input', () => { clearTimeout(d); d = setTimeout(loadItems, 350); });
+});
+
+async function loadItems() {
+  const tbody  = document.getElementById('items-tbody');
+  const q      = document.getElementById('item-search').value.trim();
+  const type   = document.getElementById('filter-type').value;
+  const status = document.getElementById('filter-status').value;
+
+  let query = supabaseClient
+    .from('items')
+    .select('id, name, type, status, category, location, date_occurred, created_at, profiles(full_name)')
+    .order('created_at', { ascending: false });
+
+  if (q)      query = query.ilike('name', `%${q}%`);
+  if (type)   query = query.eq('type', type);
+  if (status) query = query.eq('status', status);
+
+  const { data, error } = await query;
+
+  if (error || !data || data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4" style="color:var(--gray-400)">${error ? 'Error loading items.' : 'No items found.'}</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map(item => `
+    <tr>
+      <td style="font-weight:600;font-size:.88rem">${sanitize(item.name)}</td>
+      <td><span class="badge-${item.type}" style="font-size:.74rem">${capitalize(item.type)}</span></td>
+      <td style="font-size:.82rem">${sanitize(item.category)}</td>
+      <td style="font-size:.82rem">${sanitize(item.location)}</td>
+      <td style="font-size:.8rem;color:var(--gray-600)">${sanitize(item.profiles?.full_name || '—')}</td>
+      <td style="font-size:.78rem;color:var(--gray-500)">${formatDate(item.date_occurred)}</td>
+      <td><span class="badge-${item.status}" style="font-size:.74rem">${capitalize(item.status)}</span></td>
+      <td>
+        <div class="d-flex gap-1">
+          <a href="../pages/item-details.html?id=${item.id}" class="btn-outline-custom py-1 px-2" style="font-size:.74rem" target="_blank"><i class="fa-solid fa-eye"></i></a>
+          ${item.status === 'pending' ? `
+            <button onclick="approveItem('${item.id}','${item.type}')" class="btn-primary-custom py-1 px-2" style="font-size:.74rem" title="Approve"><i class="fa-solid fa-check"></i></button>
+            <button onclick="rejectItem('${item.id}')" class="btn-danger-custom py-1 px-2" style="font-size:.74rem" title="Reject"><i class="fa-solid fa-times"></i></button>` : ''}
+          <button onclick="deleteItem('${item.id}')" class="btn-danger-custom py-1 px-2" style="font-size:.74rem;background:transparent;color:var(--danger);border:1.5px solid var(--danger)" title="Delete"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+async function approveItem(id, type) {
+  const { error } = await supabaseClient.from('items')
+    .update({ status: type, is_approved: true, approved_by: _adminId, approved_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) { showToast('Error approving item.', 'error'); return; }
+  showToast('Item approved!', 'success');
+  loadItems();
+}
+
+async function rejectItem(id) {
+  if (!confirm('Reject this item report?')) return;
+  const { error } = await supabaseClient.from('items').update({ status: 'rejected' }).eq('id', id);
+  if (error) { showToast('Error rejecting item.', 'error'); return; }
+  showToast('Item rejected.', 'info');
+  loadItems();
+}
+
+async function deleteItem(id) {
+  if (!confirm('Permanently delete this item report? This cannot be undone.')) return;
+  const { error } = await supabaseClient.from('items').delete().eq('id', id);
+  if (error) { showToast('Error deleting item.', 'error'); return; }
+  showToast('Item deleted.', 'success');
+  loadItems();
+}
+
+function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+</script>
+</body>
+</html>

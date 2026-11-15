@@ -1,0 +1,297 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Claim Management — Wildcat Lost &amp; Found</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="../assets/css/style.css" />
+</head>
+<body>
+
+<nav class="navbar wlf-navbar navbar-expand-lg" style="position:sticky;top:0;z-index:1030">
+  <div class="container-fluid px-3">
+    <button id="sidebar-toggle" class="border-0 bg-transparent me-2 d-lg-none" style="color:#fff;font-size:1.1rem"><i class="fa-solid fa-bars"></i></button>
+    <a class="navbar-brand" href="../index.html">
+      <div class="brand-logo"><i class="fa-solid fa-paw"></i></div>
+      <div class="brand-text"><span class="brand-title">WILDCAT LOST &amp; FOUND</span><span class="brand-sub">Admin Panel</span></div>
+    </a>
+    <div class="ms-auto"><a href="../dashboards/admin.html" class="btn-nav-login">← Dashboard</a></div>
+  </div>
+</nav>
+
+<div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+<div class="dashboard-wrapper">
+  <aside id="app-sidebar" class="sidebar">
+    <div class="sidebar-brand">
+      <div class="sb-logo" style="background:var(--accent);color:var(--navy)"><i class="fa-solid fa-shield-halved"></i></div>
+      <div class="sb-info"><div class="sb-name" id="sb-name">Admin</div><div class="sb-role">Administrator</div></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-title">Management</div>
+      <a class="sidebar-link" href="users.html"><i class="fa-solid fa-users"></i>Users</a>
+      <a class="sidebar-link" href="items.html"><i class="fa-solid fa-boxes-stacked"></i>Items</a>
+      <a class="sidebar-link active" href="claims.html"><i class="fa-solid fa-shield-check"></i>Claims</a>
+      <a class="sidebar-link" href="reports.html"><i class="fa-solid fa-chart-bar"></i>Analytics</a>
+      <div class="sidebar-section-title">Account</div>
+      <a class="sidebar-link" href="../dashboards/admin.html"><i class="fa-solid fa-gauge"></i>Dashboard</a>
+      <a class="sidebar-link" href="#" data-action="signout"><i class="fa-solid fa-right-from-bracket"></i>Logout</a>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <div class="page-header">
+      <h1>Claim Management</h1>
+      <p>Review, approve, or reject ownership claims.</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="d-flex gap-2 mb-4">
+      <button id="tab-pending"  class="btn-primary-custom" onclick="setTab('pending')">Pending</button>
+      <button id="tab-approved" class="btn-outline-custom" onclick="setTab('approved')">Approved</button>
+      <button id="tab-rejected" class="btn-outline-custom" onclick="setTab('rejected')">Rejected</button>
+      <button id="tab-all"      class="btn-outline-custom" onclick="setTab('all')">All</button>
+    </div>
+
+    <div class="dash-card">
+      <div style="overflow-x:auto">
+        <table class="table-custom">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Claimant</th>
+              <th>Proof Summary</th>
+              <th>Submitted</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="claims-tbody">
+            <tr><td colspan="6" class="text-center py-4" style="color:var(--gray-400)">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Review Modal -->
+<div class="modal fade wlf-modal" id="reviewModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Review Claim</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body" id="review-modal-body"></div>
+      <div class="modal-footer">
+        <div class="form-group-custom me-auto mb-0" style="min-width:260px">
+          <input id="admin-notes" type="text" class="form-control-custom" placeholder="Admin notes (optional)…" />
+        </div>
+        <button type="button" class="btn-danger-custom" id="reject-claim-btn"><i class="fa-solid fa-times me-1"></i>Reject</button>
+        <button type="button" class="btn-primary-custom" id="approve-claim-btn"><i class="fa-solid fa-check me-1"></i>Approve &amp; Return</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../assets/js/supabase-config.js"></script>
+<script src="../assets/js/app.js"></script>
+<script>
+let currentTab = 'pending', reviewModal, selectedClaim = null, adminUser = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  reviewModal = new bootstrap.Modal(document.getElementById('reviewModal'));
+  const auth = await requireAuth(['admin']);
+  if (!auth) return;
+  adminUser = auth.user;
+  document.getElementById('sb-name').textContent = auth.profile.full_name;
+
+  // Auto-open claim from URL
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('id')) { await loadClaims(); openClaim(params.get('id')); }
+  else await loadClaims();
+
+  document.getElementById('approve-claim-btn').addEventListener('click', () => processClaim('approved'));
+  document.getElementById('reject-claim-btn').addEventListener('click',  () => processClaim('rejected'));
+});
+
+function setTab(tab) {
+  currentTab = tab;
+  ['pending','approved','rejected','all'].forEach(t => {
+    document.getElementById('tab-' + t).className = t === tab ? 'btn-primary-custom' : 'btn-outline-custom';
+  });
+  loadClaims();
+}
+
+async function loadClaims() {
+  const tbody = document.getElementById('claims-tbody');
+  let query = supabaseClient.from('claims')
+    .select('id, status, ownership_proof, created_at, items(id, name, type), profiles(full_name, school_id, email)')
+    .order('created_at', { ascending: false });
+
+  if (currentTab !== 'all') query = query.eq('status', currentTab);
+
+  const { data, error } = await query;
+
+  if (error || !data || data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4" style="color:var(--gray-400)">${error ? 'Error loading claims.' : 'No claims found.'}</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map(c => `
+    <tr>
+      <td style="font-weight:600">${sanitize(c.items?.name || '—')}<br><span class="badge-${c.items?.type || 'lost'}" style="font-size:.7rem">${capitalize(c.items?.type || '')}</span></td>
+      <td>
+        <div style="font-size:.88rem;font-weight:600">${sanitize(c.profiles?.full_name || '—')}</div>
+        <div style="font-size:.76rem;color:var(--gray-500)">${sanitize(c.profiles?.school_id || '')}</div>
+      </td>
+      <td style="font-size:.82rem;color:var(--gray-600);max-width:200px">
+        <div style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${sanitize(c.ownership_proof || '—')}</div>
+      </td>
+      <td style="font-size:.8rem;color:var(--gray-500)">${formatDate(c.created_at)}</td>
+      <td><span class="badge-${c.status}" style="font-size:.76rem">${capitalize(c.status)}</span></td>
+      <td>
+        <button onclick="openClaim('${c.id}')" class="btn-primary-custom py-1 px-2" style="font-size:.78rem">Review</button>
+      </td>
+    </tr>`).join('');
+}
+
+async function openClaim(id) {
+  const { data: claim, error } = await supabaseClient
+    .from('claims')
+    .select('*, items(id, name, type, category, location, description), profiles(full_name, school_id, email, department)')
+    .eq('id', id)
+    .single();
+
+  if (error || !claim) { showToast('Claim not found.', 'error'); return; }
+  selectedClaim = claim;
+
+  const item     = claim.items;
+  const claimant = claim.profiles;
+
+  document.getElementById('review-modal-body').innerHTML = `
+    <div class="row g-3">
+      <div class="col-md-6">
+        <h6 style="font-weight:700;color:var(--gray-700);margin-bottom:.8rem">Claimed Item</h6>
+        <div class="p-3 rounded" style="background:var(--gray-50);border:1.5px solid var(--gray-200)">
+          <div style="font-weight:700;font-size:1rem;color:var(--navy);margin-bottom:.4rem">${sanitize(item?.name || '—')}</div>
+          <div style="font-size:.82rem;color:var(--gray-600)"><i class="fa-solid fa-tag me-1"></i>${sanitize(item?.category || '—')}</div>
+          <div style="font-size:.82rem;color:var(--gray-600)"><i class="fa-solid fa-location-dot me-1"></i>${sanitize(item?.location || '—')}</div>
+          <div style="font-size:.82rem;color:var(--gray-600);margin-top:.4rem">${sanitize(item?.description || '—')}</div>
+        </div>
+        ${item ? `<a href="../pages/item-details.html?id=${item.id}" target="_blank" style="font-size:.8rem;color:var(--primary);display:block;margin-top:.4rem">View full item →</a>` : ''}
+      </div>
+      <div class="col-md-6">
+        <h6 style="font-weight:700;color:var(--gray-700);margin-bottom:.8rem">Claimant</h6>
+        <div class="p-3 rounded" style="background:var(--gray-50);border:1.5px solid var(--gray-200)">
+          <div style="font-weight:700;color:var(--navy)">${sanitize(claimant?.full_name || '—')}</div>
+          <div style="font-size:.82rem;color:var(--gray-500)">${sanitize(claimant?.email || '—')}</div>
+          <div style="font-size:.82rem;color:var(--gray-500)">ID: ${sanitize(claimant?.school_id || '—')}</div>
+          ${claimant?.department ? `<div style="font-size:.82rem;color:var(--gray-500)">${sanitize(claimant.department)}</div>` : ''}
+        </div>
+      </div>
+      <div class="col-12">
+        <h6 style="font-weight:700;color:var(--gray-700);margin-bottom:.6rem">Ownership Proof <span style="font-size:.75rem;font-weight:400;color:var(--gray-400)">(Private — only you can see this)</span></h6>
+        <div class="p-3 rounded" style="background:rgba(128,0,0,.04);border:1.5px solid rgba(128,0,0,.15)">
+          <p style="font-size:.9rem;color:var(--gray-700);margin:0;white-space:pre-wrap">${sanitize(claim.ownership_proof || 'No proof description provided.')}</p>
+        </div>
+        ${claim.evidence_url ? `<div class="mt-2" id="evidence-link-wrap"><button onclick="loadEvidenceLink()" class="btn-outline-custom py-1 px-3" style="font-size:.8rem"><i class="fa-solid fa-paperclip me-1"></i>View Evidence File</button></div>` : ''}
+      </div>
+    </div>`;
+
+  document.getElementById('admin-notes').value = claim.admin_notes || '';
+
+  // Hide action buttons if already reviewed
+  const isReviewed = claim.status !== 'pending';
+  document.getElementById('approve-claim-btn').style.display = isReviewed ? 'none' : 'inline-flex';
+  document.getElementById('reject-claim-btn').style.display  = isReviewed ? 'none' : 'inline-flex';
+
+  reviewModal.show();
+}
+
+async function processClaim(action) {
+  if (!selectedClaim || !adminUser) return;
+  const notes = document.getElementById('admin-notes').value.trim();
+
+  // Update claim
+  const { error: claimErr } = await supabaseClient.from('claims').update({
+    status: action, reviewed_by: adminUser.id, reviewed_at: new Date().toISOString(),
+    admin_notes: notes || null,
+  }).eq('id', selectedClaim.id);
+
+  if (claimErr) { showToast('Failed to update claim.', 'error'); return; }
+
+  if (action === 'approved') {
+    // Mark item as returned
+    const { error: itemErr } = await supabaseClient
+      .from('items').update({ status: 'returned' }).eq('id', selectedClaim.item_id);
+    if (itemErr) { showToast('Failed to update item status.', 'error'); return; }
+
+    // Create return record
+    const { error: returnErr } = await supabaseClient.from('item_returns').insert({
+      item_id:     selectedClaim.item_id,
+      claim_id:    selectedClaim.id,
+      returned_to: selectedClaim.claimant_id,
+      returned_by: adminUser.id,
+      return_notes: notes || null,
+    });
+    if (returnErr) console.error('Return record error:', returnErr.message);
+  }
+
+  // Log
+  await supabaseClient.from('activity_logs').insert({
+    user_id:     adminUser.id,
+    action,
+    description: `${capitalize(action)} claim for item: ${selectedClaim.items?.name || selectedClaim.item_id}`,
+    entity_type: 'claim',
+    entity_id:   selectedClaim.id,
+  });
+
+  reviewModal.hide();
+  showToast(`Claim ${action}.`, action === 'approved' ? 'success' : 'info');
+  loadClaims();
+}
+
+/**
+ * Generate a short-lived signed URL for private claim evidence.
+ * This avoids storing or rendering any raw URL in the DOM.
+ */
+async function loadEvidenceLink() {
+  if (!selectedClaim?.evidence_url) return;
+
+  // Extract the storage path from the stored URL
+  // evidence_url is stored as full URL: extract path after /claim-evidence/
+  let storagePath = null;
+  try {
+    const url = new URL(selectedClaim.evidence_url);
+    const marker = '/claim-evidence/';
+    const idx = url.pathname.indexOf(marker);
+    if (idx !== -1) storagePath = decodeURIComponent(url.pathname.slice(idx + marker.length));
+  } catch (_) {}
+
+  if (!storagePath) { showToast('Could not load evidence file.', 'error'); return; }
+
+  const { data, error } = await supabaseClient.storage
+    .from('claim-evidence')
+    .createSignedUrl(storagePath, 300); // 5-minute expiry
+
+  if (error || !data?.signedUrl) {
+    showToast('Could not generate secure link. Check storage permissions.', 'error');
+    return;
+  }
+
+  // Validate the returned URL is actually from Supabase
+  if (!isSafeUrl(data.signedUrl)) {
+    showToast('Invalid evidence URL.', 'error');
+    return;
+  }
+
+  window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+}
+
+function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+</script>
+</body>
+</html>

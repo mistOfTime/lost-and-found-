@@ -1,0 +1,17 @@
+# Never commit real credentials
+# If you fork this project, replace keys in supabase-config.js before committing
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+*.suo
+*.user
+
+# Logs
+*.log
+
+# Dependencies (if you ever add npm)
+node_modules/

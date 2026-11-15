@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Messages — Wildcat Lost &amp; Found</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="../assets/css/style.css" />
+</head>
+<body>
+<nav class="navbar wlf-navbar navbar-expand-lg" style="position:sticky;top:0;z-index:1030">
+  <div class="container">
+    <a class="navbar-brand" href="../index.html">
+      <div class="brand-logo"><i class="fa-solid fa-paw"></i></div>
+      <div class="brand-text"><span class="brand-title">WILDCAT LOST &amp; FOUND</span><span class="brand-sub">CIT-U Campus System</span></div>
+    </a>
+    <div class="ms-auto d-flex gap-2">
+      <a id="dashboard-link" href="#" class="btn-nav-login">← Dashboard</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container py-4">
+  <div class="page-header"><h1><i class="fa-solid fa-comments me-2" style="color:var(--primary)"></i>Messages</h1><p>Private conversations.</p></div>
+
+  <div class="messages-layout" style="height:calc(100vh - 220px)">
+    <!-- Conversation list -->
+    <div class="convo-list" id="convo-list">
+      <div class="p-3 border-bottom">
+        <div class="input-icon-wrap">
+          <i class="fa-solid fa-magnifying-glass input-icon"></i>
+          <input id="convo-search" type="text" class="form-control-custom" placeholder="Search conversations…" style="font-size:.85rem" />
+        </div>
+      </div>
+      <div id="convo-items">
+        <div class="text-center py-4" style="color:var(--gray-400);font-size:.85rem">Loading…</div>
+      </div>
+    </div>
+
+    <!-- Chat area -->
+    <div class="chat-area" id="chat-area">
+      <div style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:1rem">
+        <i class="fa-solid fa-comments" style="font-size:3.5rem;color:var(--gray-200)"></i>
+        <p style="color:var(--gray-400);font-size:.9rem">Select a conversation to start messaging</p>
+        <button class="btn-primary-custom" onclick="openNewConvo()"><i class="fa-solid fa-pen-to-square me-1"></i>New Message</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- New conversation modal -->
+<div class="modal fade wlf-modal" id="newConvoModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">New Message</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <label class="form-label-custom">Search user to message</label>
+        <input id="new-convo-search" type="text" class="form-control-custom mb-2" placeholder="Name or email…" />
+        <div id="user-search-results" style="max-height:200px;overflow-y:auto"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../assets/js/supabase-config.js"></script>
+<script src="../assets/js/app.js"></script>
+<script>
+let _userId = null, _activePeer = null, newConvoModal, msgChannel;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  newConvoModal = new bootstrap.Modal(document.getElementById('newConvoModal'));
+  const auth = await requireAuth(['student', 'faculty', 'admin']);
+  if (!auth) return;
+  _userId = auth.user.id;
+
+  document.getElementById('dashboard-link').href =
+    auth.profile.role === 'admin' ? '../dashboards/admin.html' :
+    auth.profile.role === 'faculty' ? '../dashboards/faculty.html' :
+    '../dashboards/student.html';
+
+  await loadConversations();
+
+  // Open from URL
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('peer')) openChat(params.get('peer'));
+
+  // New convo search
+  let d2;
+  document.getElementById('new-convo-search').addEventListener('input', async function() {
+    clearTimeout(d2);
+    d2 = setTimeout(() => searchUsers(this.value), 300);
+  });
+
+  // Realtime for messages
+  msgChannel = supabaseClient.channel('messages-page')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages',
+      filter: `receiver_id=eq.${_userId}` },
+      (p) => { loadConversations(); if (_activePeer === p.new.sender_id) appendMessage(p.new, false); })
+    .subscribe();
+});
+
+async function loadConversations() {
+  const container = document.getElementById('convo-items');
+
+  // Get distinct conversation partners
+  const { data: sent } = await supabaseClient.from('messages').select('receiver_id').eq('sender_id', _userId);
+  const { data: recv } = await supabaseClient.from('messages').select('sender_id').eq('receiver_id', _userId);
+
+  const peerIds = [...new Set([
+    ...(sent || []).map(m => m.receiver_id),
+    ...(recv || []).map(m => m.sender_id),
+  ])].filter(id => id !== _userId);
+
+  if (peerIds.length === 0) {
+    container.innerHTML = `<div class="text-center py-4" style="color:var(--gray-400);font-size:.85rem">No conversations yet.</div>`;
+    return;
+  }
+
+  const { data: peers } = await supabaseClient.from('profiles').select('id, full_name, role').in('id', peerIds);
+
+  container.innerHTML = (peers || []).map(p => `
+    <div class="convo-item ${_activePeer === p.id ? 'active' : ''}" onclick="openChat('${p.id}')">
+      <div class="convo-avatar">${getInitials(p.full_name)}</div>
+      <div class="convo-info">
+        <div class="convo-name">${sanitize(p.full_name)}</div>
+        <div class="convo-preview" style="font-size:.74rem;color:var(--gray-400)">${capitalize(p.role)}</div>
+      </div>
+    </div>`).join('');
+}
+
+async function openChat(peerId) {
+  _activePeer = peerId;
+  loadConversations();
+
+  const { data: peer } = await supabaseClient.from('profiles').select('id, full_name, role').eq('id', peerId).single();
+  if (!peer) return;
+
+  const { data: msgs } = await supabaseClient
+    .from('messages')
+    .select('*')
+    .or(`and(sender_id.eq.${_userId},receiver_id.eq.${peerId}),and(sender_id.eq.${peerId},receiver_id.eq.${_userId})`)
+    .order('created_at', { ascending: true });
+
+  // Mark received messages as read
+  await supabaseClient.from('messages').update({ is_read: true }).eq('sender_id', peerId).eq('receiver_id', _userId);
+
+  document.getElementById('chat-area').innerHTML = `
+    <div class="chat-header">
+      <div class="convo-avatar" style="width:36px;height:36px;font-size:.8rem">${getInitials(peer.full_name)}</div>
+      <div>
+        <div style="font-weight:600;font-size:.9rem;color:var(--navy)">${sanitize(peer.full_name)}</div>
+        <div style="font-size:.74rem;color:var(--gray-500)">${capitalize(peer.role)}</div>
+      </div>
+    </div>
+    <div class="chat-messages" id="chat-messages">
+      ${(msgs || []).map(m => renderBubble(m)).join('')}
+    </div>
+    <div class="chat-input-area">
+      <input id="msg-input" type="text" placeholder="Type a message…" onkeydown="if(event.key==='Enter')sendMessage()" />
+      <button class="btn-primary-custom py-2 px-3" onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+    </div>`;
+
+  scrollToBottom();
+}
+
+function renderBubble(msg) {
+  const out = msg.sender_id === _userId;
+  return `<div style="display:flex;flex-direction:column;align-items:${out ? 'flex-end' : 'flex-start'}">
+    <div class="chat-bubble ${out ? 'outgoing' : 'incoming'}">${sanitize(msg.content)}</div>
+    <div style="font-size:.68rem;color:var(--gray-400);margin-top:.2rem;padding:0 .4rem">${timeAgo(msg.created_at)}</div>
+  </div>`;
+}
+
+function appendMessage(msg, isOwn) {
+  const container = document.getElementById('chat-messages');
+  if (!container) return;
+  const div = document.createElement('div');
+  div.innerHTML = renderBubble({ ...msg, sender_id: isOwn ? _userId : 'other' });
+  container.appendChild(div.firstElementChild);
+  scrollToBottom();
+}
+
+async function sendMessage() {
+  if (!_activePeer) return;
+  const input = document.getElementById('msg-input');
+  const content = input.value.trim();
+  if (!content) return;
+
+  input.value = '';
+
+  const { data: msg, error } = await supabaseClient.from('messages').insert({
+    sender_id: _userId, receiver_id: _activePeer, content,
+  }).select().single();
+
+  if (error) { showToast('Failed to send message.', 'error'); return; }
+  appendMessage(msg, true);
+}
+
+function scrollToBottom() {
+  const c = document.getElementById('chat-messages');
+  if (c) c.scrollTop = c.scrollHeight;
+}
+
+function openNewConvo() { newConvoModal.show(); }
+
+async function searchUsers(q) {
+  const results = document.getElementById('user-search-results');
+  if (!q.trim()) { results.innerHTML = ''; return; }
+
+  // Strip characters that could break PostgREST filter syntax
+  const safeQ = q.replace(/[(),%]/g, '').trim().slice(0, 60);
+  if (!safeQ) { results.innerHTML = ''; return; }
+
+  const { data } = await supabaseClient
+    .from('profiles')
+    .select('id, full_name, role')
+    .or(`full_name.ilike.%${safeQ}%,email.ilike.%${safeQ}%`)
+    .neq('id', _userId)
+    .limit(8);
+  results.innerHTML = !data || data.length === 0 ? '<p style="font-size:.85rem;color:var(--gray-400);padding:.5rem">No users found.</p>'
+    : data.map(u => `
+      <div class="convo-item" onclick="newConvoModal.hide();openChat('${u.id}')" style="border-radius:var(--radius-sm)">
+        <div class="convo-avatar" style="width:34px;height:34px;font-size:.75rem">${getInitials(u.full_name)}</div>
+        <div class="convo-info">
+          <div class="convo-name" style="font-size:.85rem">${sanitize(u.full_name)}</div>
+          <div style="font-size:.74rem;color:var(--gray-400)">${capitalize(u.role)}</div>
+        </div>
+      </div>`).join('');
+}
+
+function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+</script>
+</body>
+</html>

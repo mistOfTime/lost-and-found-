@@ -1,0 +1,190 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Analytics &amp; Reports — Wildcat Lost &amp; Found</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<nav class="navbar wlf-navbar navbar-expand-lg" style="position:sticky;top:0;z-index:1030">
+  <div class="container-fluid px-3">
+    <button id="sidebar-toggle" class="border-0 bg-transparent me-2 d-lg-none" style="color:#fff;font-size:1.1rem"><i class="fa-solid fa-bars"></i></button>
+    <a class="navbar-brand" href="../index.html">
+      <div class="brand-logo"><i class="fa-solid fa-paw"></i></div>
+      <div class="brand-text"><span class="brand-title">WILDCAT LOST &amp; FOUND</span><span class="brand-sub">Admin Panel</span></div>
+    </a>
+    <div class="ms-auto"><a href="../dashboards/admin.html" class="btn-nav-login">← Dashboard</a></div>
+  </div>
+</nav>
+<div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+<div class="dashboard-wrapper">
+  <aside id="app-sidebar" class="sidebar">
+    <div class="sidebar-brand">
+      <div class="sb-logo" style="background:var(--accent);color:var(--navy)"><i class="fa-solid fa-shield-halved"></i></div>
+      <div class="sb-info"><div class="sb-name" id="sb-name">Admin</div><div class="sb-role">Administrator</div></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-title">Management</div>
+      <a class="sidebar-link" href="users.html"><i class="fa-solid fa-users"></i>Users</a>
+      <a class="sidebar-link" href="items.html"><i class="fa-solid fa-boxes-stacked"></i>Items</a>
+      <a class="sidebar-link" href="claims.html"><i class="fa-solid fa-shield-check"></i>Claims</a>
+      <a class="sidebar-link active" href="reports.html"><i class="fa-solid fa-chart-bar"></i>Analytics</a>
+      <div class="sidebar-section-title">Account</div>
+      <a class="sidebar-link" href="../dashboards/admin.html"><i class="fa-solid fa-gauge"></i>Dashboard</a>
+      <a class="sidebar-link" href="#" data-action="signout"><i class="fa-solid fa-right-from-bracket"></i>Logout</a>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <div class="page-header"><h1>Analytics &amp; Reports</h1><p>System-wide statistics and insights.</p></div>
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-xl-2"><div class="stat-card"><div class="stat-icon purple"><i class="fa-solid fa-users"></i></div><div class="stat-info"><h3 id="r-users">—</h3><p>Total Users</p></div></div></div>
+      <div class="col-6 col-xl-2"><div class="stat-card"><div class="stat-icon red"><i class="fa-solid fa-magnifying-glass"></i></div><div class="stat-info"><h3 id="r-lost">—</h3><p>Lost Items</p></div></div></div>
+      <div class="col-6 col-xl-2"><div class="stat-card"><div class="stat-icon green"><i class="fa-solid fa-box-open"></i></div><div class="stat-info"><h3 id="r-found">—</h3><p>Found Items</p></div></div></div>
+      <div class="col-6 col-xl-2"><div class="stat-card"><div class="stat-icon blue"><i class="fa-solid fa-shield-check"></i></div><div class="stat-info"><h3 id="r-claims">—</h3><p>Total Claims</p></div></div></div>
+      <div class="col-6 col-xl-2"><div class="stat-card"><div class="stat-icon green"><i class="fa-solid fa-box-check"></i></div><div class="stat-info"><h3 id="r-returned">—</h3><p>Returned</p></div></div></div>
+      <div class="col-6 col-xl-2"><div class="stat-card"><div class="stat-icon orange"><i class="fa-solid fa-percent"></i></div><div class="stat-info"><h3 id="r-rate">—%</h3><p>Return Rate</p></div></div></div>
+    </div>
+
+    <div class="row g-3">
+      <!-- Items by Category -->
+      <div class="col-lg-6">
+        <div class="dash-card">
+          <div class="dash-card-header"><h5><i class="fa-solid fa-chart-pie me-2 text-primary"></i>Items by Category</h5></div>
+          <div class="dash-card-body">
+            <canvas id="categoryChart" style="max-height:280px"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Items by Status -->
+      <div class="col-lg-6">
+        <div class="dash-card">
+          <div class="dash-card-header"><h5><i class="fa-solid fa-chart-bar me-2 text-info"></i>Items by Status</h5></div>
+          <div class="dash-card-body">
+            <canvas id="statusChart" style="max-height:280px"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activity Log -->
+      <div class="col-12">
+        <div class="dash-card">
+          <div class="dash-card-header">
+            <h5><i class="fa-solid fa-timeline me-2" style="color:var(--accent)"></i>Activity Log</h5>
+            <span id="log-count" style="font-size:.82rem;color:var(--gray-500)"></span>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="table-custom">
+              <thead><tr><th>Action</th><th>User</th><th>Description</th><th>Time</th></tr></thead>
+              <tbody id="logs-tbody"><tr><td colspan="4" class="text-center py-4" style="color:var(--gray-400)">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../assets/js/supabase-config.js"></script>
+<script src="../assets/js/app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  const auth = await requireAuth(['admin']);
+  if (!auth) return;
+  document.getElementById('sb-name').textContent = auth.profile.full_name;
+
+  await Promise.all([loadStats(), loadCharts(), loadLogs()]);
+});
+
+async function loadStats() {
+  const [users, lost, found, claims, returned] = await Promise.all([
+    supabaseClient.from('profiles').select('*', { count: 'exact', head: true }),
+    supabaseClient.from('items').select('*', { count: 'exact', head: true }).eq('type', 'lost'),
+    supabaseClient.from('items').select('*', { count: 'exact', head: true }).eq('type', 'found'),
+    supabaseClient.from('claims').select('*', { count: 'exact', head: true }),
+    supabaseClient.from('item_returns').select('*', { count: 'exact', head: true }),
+  ]);
+  const totalItems = (lost.count || 0) + (found.count || 0);
+  const rate = totalItems > 0 ? Math.round(((returned.count || 0) / totalItems) * 100) : 0;
+
+  document.getElementById('r-users').textContent    = users.count    || 0;
+  document.getElementById('r-lost').textContent     = lost.count     || 0;
+  document.getElementById('r-found').textContent    = found.count    || 0;
+  document.getElementById('r-claims').textContent   = claims.count   || 0;
+  document.getElementById('r-returned').textContent = returned.count || 0;
+  document.getElementById('r-rate').textContent     = rate + '%';
+}
+
+async function loadCharts() {
+  const { data: items } = await supabaseClient.from('items').select('category, status');
+  if (!items) return;
+
+  // Category chart
+  const catCounts = {};
+  items.forEach(i => { catCounts[i.category] = (catCounts[i.category] || 0) + 1; });
+  new Chart(document.getElementById('categoryChart'), {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(catCounts),
+      datasets: [{ data: Object.values(catCounts), backgroundColor: [
+        '#800000','#D4AF37','#a30000','#b8962e','#5c0000',
+        '#e8c84a','#c9a227','#8b0000','#10b981','#f59e0b'
+      ]}],
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } } },
+  });
+
+  // Status chart
+  const statusCounts = {};
+  items.forEach(i => { statusCounts[i.status] = (statusCounts[i.status] || 0) + 1; });
+  const statusColors = { lost:'#800000', found:'#10b981', pending:'#D4AF37', claimed:'#b8962e', returned:'#5c0000', rejected:'#94a3b8' };
+  new Chart(document.getElementById('statusChart'), {
+    type: 'bar',
+    data: {
+      labels: Object.keys(statusCounts).map(s => s.charAt(0).toUpperCase() + s.slice(1)),
+      datasets: [{ data: Object.values(statusCounts), backgroundColor: Object.keys(statusCounts).map(s => statusColors[s] || '#94a3b8'), borderRadius: 6 }],
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } },
+  });
+}
+
+async function loadLogs() {
+  const tbody = document.getElementById('logs-tbody');
+  const { data, error, count } = await supabaseClient
+    .from('activity_logs')
+    .select('*, profiles(full_name)', { count: 'exact' })
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  document.getElementById('log-count').textContent = `${count || 0} entries`;
+
+  if (error || !data || data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4" style="color:var(--gray-400)">No activity yet.</td></tr>`;
+    return;
+  }
+
+  const actionColors = { login:'#3b82f6', report:'#800000', claim:'#D4AF37', approve:'#10b981', reject:'#ef4444', return:'#10b981' };
+  tbody.innerHTML = data.map(log => `
+    <tr>
+      <td><span style="font-size:.78rem;font-weight:600;color:${actionColors[log.action]||'var(--gray-600)'};background:${actionColors[log.action]||'var(--gray-400)'}18;padding:.2em .6em;border-radius:99px">${capitalize(log.action)}</span></td>
+      <td style="font-size:.85rem">${sanitize(log.profiles?.full_name || 'System')}</td>
+      <td style="font-size:.82rem;color:var(--gray-600)">${sanitize(log.description || '—')}</td>
+      <td style="font-size:.78rem;color:var(--gray-500)">${formatDateTime(log.created_at)}</td>
+    </tr>`).join('');
+}
+
+function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+</script>
+</body>
+</html>

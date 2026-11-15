@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Item Details — Wildcat Lost &amp; Found</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="../assets/css/style.css" />
+</head>
+<body>
+
+<nav class="navbar wlf-navbar navbar-expand-lg">
+  <div class="container">
+    <a class="navbar-brand" href="../index.html">
+      <div class="brand-logo"><i class="fa-solid fa-paw"></i></div>
+      <div class="brand-text">
+        <span class="brand-title">WILDCAT LOST &amp; FOUND</span>
+        <span class="brand-sub">CIT-U Campus System</span>
+      </div>
+    </a>
+    <div class="ms-auto d-flex gap-2">
+      <a href="lost-items.html" class="btn-nav-login">← Browse Items</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container py-4" id="item-container">
+  <div class="text-center py-5">
+    <div class="loader-spin mx-auto mb-3" style="width:48px;height:48px;border:4px solid var(--gray-200);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite"></div>
+    <p style="color:var(--gray-500)">Loading item details…</p>
+  </div>
+</div>
+
+<!-- Claim Modal -->
+<div class="modal fade wlf-modal" id="claimModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Submit Ownership Claim</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert-custom info mb-3">
+          <i class="fa-solid fa-lock"></i>
+          <span>Your evidence and proof are <strong>private</strong> — only administrators can view them.</span>
+        </div>
+        <form id="claim-form">
+          <div class="form-group-custom">
+            <label class="form-label-custom" for="ownership-proof">Describe Your Proof of Ownership <span style="color:var(--danger)">*</span></label>
+            <textarea id="ownership-proof" class="form-control-custom" rows="4"
+              placeholder="Describe how you can prove this is yours — receipts, serial numbers, photos you have, specific contents only you would know…"
+              style="resize:vertical"></textarea>
+          </div>
+          <div class="form-group-custom mb-0">
+            <label class="form-label-custom" for="evidence-file">Supporting Evidence <span style="color:var(--gray-400);font-weight:400">(optional)</span></label>
+            <input id="evidence-file" type="file" class="form-control-custom" accept="image/*,.pdf" />
+            <p style="font-size:.75rem;color:var(--gray-400);margin-top:.3rem">Photo, receipt, or document. Max 5 MB. Private — only admins can view.</p>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-outline-custom" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn-primary-custom" id="submit-claim-btn">
+          <span id="claim-btn-text"><i class="fa-solid fa-shield-check me-1"></i>Submit Claim</span>
+          <span id="claim-spinner" style="display:none"><span class="wlf-loader" style="border-color:rgba(255,255,255,.3);border-top-color:#fff"></span></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../assets/js/supabase-config.js"></script>
+<script src="../assets/js/app.js"></script>
+
+<script>
+let currentItem = null;
+let currentUser = null;
+let claimModal  = null;
+
+const catIcons = {
+  'Electronics':'fa-mobile-screen','Clothing & Accessories':'fa-shirt',
+  'Books & Notes':'fa-book','ID & Cards':'fa-id-card',
+  'Bags & Backpacks':'fa-bag-shopping','Keys':'fa-key',
+  'Jewelry & Watches':'fa-gem','Sports Equipment':'fa-baseball-bat-ball',
+  'School Supplies':'fa-pencil','Other':'fa-box',
+};
+
+document.addEventListener('DOMContentLoaded', async () => {
+  claimModal = new bootstrap.Modal(document.getElementById('claimModal'));
+
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('id');
+  if (!id) { showError('No item ID provided.'); return; }
+
+  const user = await getCurrentUser();
+  if (user) currentUser = user;
+
+  await loadItem(id);
+});
+
+async function loadItem(id) {
+  const { data: item, error } = await supabaseClient
+    .from('items')
+    .select(`
+      *,
+      profiles(full_name, role, school_id),
+      item_images(url, is_primary)
+    `)
+    .eq('id', id)
+    .single();
+
+  if (error || !item) { showError('Item not found.'); return; }
+  currentItem = item;
+
+  const primaryImg = item.item_images?.find(i => i.is_primary)?.url || null;
+
+  // Check if current user already claimed this
+  let userClaim = null;
+  if (currentUser) {
+    const { data: c } = await supabaseClient
+      .from('claims')
+      .select('id, status')
+      .eq('item_id', id)
+      .eq('claimant_id', currentUser.id)
+      .maybeSingle();
+    userClaim = c;
+  }
+
+  const isOwner  = currentUser && item.reporter_id === currentUser.id;
+  const canClaim = currentUser && !isOwner && !userClaim && item.status !== 'returned' && item.status !== 'claimed';
+
+  document.getElementById('item-container').innerHTML = `
+    <nav aria-label="breadcrumb" class="mb-3">
+      <ol class="breadcrumb" style="font-size:.85rem">
+        <li class="breadcrumb-item"><a href="../index.html">Home</a></li>
+        <li class="breadcrumb-item"><a href="${item.type === 'lost' ? 'lost-items.html' : 'found-items.html'}">${item.type === 'lost' ? 'Lost' : 'Found'} Items</a></li>
+        <li class="breadcrumb-item active">${sanitize(item.name)}</li>
+      </ol>
+    </nav>
+
+    <div class="row g-4">
+      <!-- Image -->
+      <div class="col-lg-5">
+        <div class="dash-card overflow-hidden">
+          ${primaryImg
+            ? `<img src="${primaryImg}" alt="${sanitize(item.name)}" style="width:100%;height:320px;object-fit:cover">`
+            : `<div class="item-card-img-placeholder" style="height:320px;font-size:5rem"><i class="fa-solid ${catIcons[item.category]||'fa-box'}" style="color:var(--gray-300)"></i></div>`
+          }
+          <div class="dash-card-body d-flex gap-2 flex-wrap">
+            ${canClaim ? `<button class="btn-primary-custom flex-fill justify-content-center" onclick="openClaimModal()"><i class="fa-solid fa-shield-check me-1"></i>Submit Claim</button>` : ''}
+            ${userClaim ? `<div class="alert-custom ${userClaim.status === 'approved' ? 'success' : userClaim.status === 'rejected' ? 'error' : 'info'} flex-fill"><i class="fa-solid fa-circle-info"></i><span>Claim status: <strong>${userClaim.status}</strong></span></div>` : ''}
+            ${!currentUser ? `<a href="login.html" class="btn-primary-custom flex-fill justify-content-center"><i class="fa-solid fa-right-to-bracket me-1"></i>Login to Claim</a>` : ''}
+            ${isOwner ? `<div class="alert-custom info flex-fill"><i class="fa-solid fa-user"></i><span>This is your report</span></div>` : ''}
+          </div>
+        </div>
+      </div>
+
+      <!-- Details -->
+      <div class="col-lg-7">
+        <div class="dash-card">
+          <div class="dash-card-header">
+            <div>
+              <span class="badge-${item.type}" style="font-size:.8rem;padding:.35em .9em;margin-bottom:.5rem;display:inline-block">${item.type === 'lost' ? 'Lost' : 'Found'}</span>
+              <h2 style="font-size:1.6rem;font-weight:800;color:var(--navy);margin:0">${sanitize(item.name)}</h2>
+            </div>
+            <span class="badge-${item.status}">${capitalize(item.status)}</span>
+          </div>
+          <div class="dash-card-body">
+            <div class="row g-3 mb-4">
+              <div class="col-sm-6">
+                <div style="font-size:.75rem;color:var(--gray-400);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.2rem">Category</div>
+                <div style="font-size:.92rem;font-weight:600;color:var(--gray-700)"><i class="fa-solid fa-tag me-1 text-primary"></i>${sanitize(item.category)}</div>
+              </div>
+              <div class="col-sm-6">
+                <div style="font-size:.75rem;color:var(--gray-400);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.2rem">Location</div>
+                <div style="font-size:.92rem;font-weight:600;color:var(--gray-700)"><i class="fa-solid fa-location-dot me-1 text-primary"></i>${sanitize(item.location)}</div>
+              </div>
+              <div class="col-sm-6">
+                <div style="font-size:.75rem;color:var(--gray-400);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.2rem">Date ${item.type === 'lost' ? 'Lost' : 'Found'}</div>
+                <div style="font-size:.92rem;font-weight:600;color:var(--gray-700)"><i class="fa-regular fa-calendar me-1 text-primary"></i>${formatDate(item.date_occurred)}</div>
+              </div>
+              <div class="col-sm-6">
+                <div style="font-size:.75rem;color:var(--gray-400);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.2rem">Reported By</div>
+                <div style="font-size:.92rem;font-weight:600;color:var(--gray-700)"><i class="fa-solid fa-user me-1 text-primary"></i>${sanitize(item.profiles?.full_name || 'Anonymous')}</div>
+              </div>
+              ${item.brand ? `<div class="col-sm-6"><div style="font-size:.75rem;color:var(--gray-400);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.2rem">Brand</div><div style="font-size:.92rem;font-weight:600;color:var(--gray-700)">${sanitize(item.brand)}</div></div>` : ''}
+              ${item.color ? `<div class="col-sm-6"><div style="font-size:.75rem;color:var(--gray-400);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.2rem">Color</div><div style="font-size:.92rem;font-weight:600;color:var(--gray-700)">${sanitize(item.color)}</div></div>` : ''}
+            </div>
+
+            <div style="font-size:.75rem;color:var(--gray-400);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.4rem">Description</div>
+            <p style="font-size:.92rem;color:var(--gray-700);line-height:1.7">${sanitize(item.description || 'No description provided.')}</p>
+
+            ${item.distinguishing_features ? `
+              <div style="font-size:.75rem;color:var(--gray-400);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.4rem;margin-top:1rem">Distinguishing Features</div>
+              <p style="font-size:.92rem;color:var(--gray-700);line-height:1.7">${sanitize(item.distinguishing_features)}</p>` : ''}
+
+            <div style="border-top:1px solid var(--gray-100);margin-top:1rem;padding-top:.8rem;font-size:.78rem;color:var(--gray-400)">
+              Reported ${timeAgo(item.created_at)}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function openClaimModal() {
+  if (!currentUser) { window.location.href = 'login.html'; return; }
+  claimModal.show();
+}
+
+document.getElementById('submit-claim-btn').addEventListener('click', async () => {
+  if (!currentItem || !currentUser) return;
+
+  const proof    = document.getElementById('ownership-proof').value.trim();
+  const evidence = document.getElementById('evidence-file').files[0];
+
+  if (!proof) { showToast('Please describe your proof of ownership.', 'error'); return; }
+
+  setClaimLoading(true);
+
+  try {
+    let evidenceUrl = null;
+
+    // Upload evidence if provided
+    if (evidence) {
+      const ext  = evidence.name.split('.').pop();
+      const path = `${currentUser.id}/${currentItem.id}_evidence.${ext}`;
+      const { error: upErr } = await supabaseClient.storage
+        .from('claim-evidence')
+        .upload(path, evidence, { upsert: true });
+      if (!upErr) {
+        const { data: urlData } = supabaseClient.storage.from('claim-evidence').getPublicUrl(path);
+        evidenceUrl = urlData.publicUrl;
+      }
+    }
+
+    const { error } = await supabaseClient.from('claims').insert({
+      item_id:         currentItem.id,
+      claimant_id:     currentUser.id,
+      ownership_proof: proof,
+      evidence_url:    evidenceUrl,
+    });
+
+    if (error) throw new Error(error.message === 'duplicate key value violates unique constraint "claims_item_id_claimant_id_key"'
+      ? 'You have already submitted a claim for this item.' : error.message);
+
+    // Log activity
+    await supabaseClient.from('activity_logs').insert({
+      user_id: currentUser.id, action: 'claim',
+      description: `Submitted claim for: ${currentItem.name}`,
+      entity_type: 'claim', entity_id: currentItem.id,
+    });
+
+    setClaimLoading(false);
+    claimModal.hide();
+    showToast('Claim submitted! Administrators will review it shortly.', 'success');
+    setTimeout(() => location.reload(), 1500);
+
+  } catch (err) {
+    setClaimLoading(false);
+    showToast(err.message, 'error');
+  }
+});
+
+function setClaimLoading(on) {
+  document.getElementById('claim-btn-text').style.display  = on ? 'none' : 'inline-flex';
+  document.getElementById('claim-spinner').style.display   = on ? 'inline-flex' : 'none';
+  document.getElementById('submit-claim-btn').disabled     = on;
+}
+
+function showError(msg) {
+  document.getElementById('item-container').innerHTML = `
+    <div class="text-center py-5">
+      <i class="fa-solid fa-circle-exclamation" style="font-size:3rem;color:var(--danger)"></i>
+      <p class="mt-3" style="color:var(--gray-600)">${sanitize(msg)}</p>
+      <a href="lost-items.html" class="btn-outline-custom mt-2">← Back to Lost Items</a>
+    </div>`;
+}
+
+function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+</script>
+</body>
+</html>
