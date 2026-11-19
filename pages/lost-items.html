@@ -157,10 +157,9 @@ async function loadItems() {
 
   let query = supabaseClient
     .from('items')
-    .select('id, name, category, location, date_occurred, description, status, created_at', { count: 'exact' })
+    .select('id, name, category, location, date_occurred, description, status, created_at, item_images(url, is_primary)', { count: 'exact' })
     .eq('type', 'lost')
-    .neq('status', 'rejected')
-    .neq('status', 'pending')
+    .eq('is_approved', true)
     .order('created_at', { ascending: false })
     .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
 
@@ -190,12 +189,15 @@ async function loadItems() {
     return;
   }
 
-  grid.innerHTML = data.map(item => `
+  grid.innerHTML = data.map(item => {
+    const img = item.item_images?.find(i => i.is_primary)?.url || item.item_images?.[0]?.url || null;
+    return `
     <div class="col-sm-6 col-md-4 col-lg-3">
       <div class="item-card" onclick="window.location.href='item-details.html?id=${item.id}'" style="cursor:pointer">
-        <div class="item-card-img-placeholder">
-          <i class="fa-solid ${catIcons[item.category] || 'fa-box'}"></i>
-        </div>
+        ${img
+          ? `<img src="${img}" alt="${sanitize(item.name)}" style="width:100%;height:180px;object-fit:cover">`
+          : `<div class="item-card-img-placeholder"><i class="fa-solid ${catIcons[item.category] || 'fa-box'}"></i></div>`
+        }
         <div class="item-card-body">
           <div class="d-flex justify-content-between align-items-start mb-1">
             <span class="item-card-title">${sanitize(item.name)}</span>
@@ -212,7 +214,8 @@ async function loadItems() {
           </div>
         </div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   renderPagination();
 }
