@@ -35,3 +35,8 @@ CREATE POLICY "items_insert_auth"
 
 SELECT 'Auto-approve applied. ' || COUNT(*) || ' items approved.' AS result
 FROM public.items WHERE is_approved = true;
+
+-- Fix item_images RLS so images are visible to everyone
+DROP POLICY IF EXISTS "item_images_select" ON public.item_images;
+CREATE POLICY "item_images_select"
+  ON public.item_images FOR SELECT USING (TRUE);

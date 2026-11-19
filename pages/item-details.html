@@ -103,15 +103,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function loadItem(id) {
+  // Fetch item without profile join to avoid RLS issues
   const { data: item, error } = await supabaseClient
     .from('items')
-    .select(`
-      *,
-      profiles(full_name, role, school_id),
-      item_images(url, is_primary)
-    `)
+    .select('*, item_images(url, is_primary)')
     .eq('id', id)
     .single();
+
+  // Fetch reporter name separately
+  let reporterName = 'Anonymous';
+  if (item?.reporter_id) {
+    const { data: prof } = await supabaseClient
+      .from('profiles')
+      .select('full_name, role, school_id')
+      .eq('id', item.reporter_id)
+      .single();
+    if (prof) reporterName = prof.full_name;
+    if (prof) item._reporter = prof;
+  }
 
   if (error || !item) { showError('Item not found.'); return; }
   currentItem = item;
@@ -185,7 +194,7 @@ async function loadItem(id) {
               </div>
               <div class="col-sm-6">
                 <div style="font-size:.75rem;color:var(--gray-400);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.2rem">Reported By</div>
-                <div style="font-size:.92rem;font-weight:600;color:var(--gray-700)"><i class="fa-solid fa-user me-1 text-primary"></i>${sanitize(item.profiles?.full_name || 'Anonymous')}</div>
+                <div style="font-size:.92rem;font-weight:600;color:var(--gray-700)"><i class="fa-solid fa-user me-1 text-primary"></i>${sanitize(item._reporter?.full_name || reporterName)}</div>
               </div>
               ${item.brand ? `<div class="col-sm-6"><div style="font-size:.75rem;color:var(--gray-400);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.2rem">Brand</div><div style="font-size:.92rem;font-weight:600;color:var(--gray-700)">${sanitize(item.brand)}</div></div>` : ''}
               ${item.color ? `<div class="col-sm-6"><div style="font-size:.75rem;color:var(--gray-400);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.2rem">Color</div><div style="font-size:.92rem;font-weight:600;color:var(--gray-700)">${sanitize(item.color)}</div></div>` : ''}
