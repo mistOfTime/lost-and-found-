@@ -229,22 +229,29 @@
      ============================================================ -->
 <section style="background:linear-gradient(135deg,var(--navy),var(--primary-dark));padding:3rem 0">
   <div class="container">
+    <!-- Live indicator -->
+    <div class="text-center mb-4">
+      <span style="display:inline-flex;align-items:center;gap:.5rem;font-size:.78rem;color:rgba(255,255,255,.5);letter-spacing:.5px;text-transform:uppercase">
+        <span style="width:7px;height:7px;background:#10b981;border-radius:50%;display:inline-block;animation:pulse 2s infinite"></span>
+        Live Statistics
+      </span>
+    </div>
     <div class="row g-3 text-center text-white" id="stats-row">
       <div class="col-6 col-md-3">
-        <div class="fs-2 fw-800 text-white" id="stat-users">—</div>
-        <div class="mt-1" style="font-size:.85rem;color:rgba(255,255,255,.65)">Registered Users</div>
+        <div style="font-size:clamp(1.6rem,4vw,2.5rem);font-weight:800;color:#fff;line-height:1" id="stat-users">0</div>
+        <div class="mt-2" style="font-size:.82rem;color:rgba(255,255,255,.6)">Registered Users</div>
       </div>
       <div class="col-6 col-md-3">
-        <div class="fs-2 fw-800 text-white" id="stat-lost">—</div>
-        <div class="mt-1" style="font-size:.85rem;color:rgba(255,255,255,.65)">Items Reported Lost</div>
+        <div style="font-size:clamp(1.6rem,4vw,2.5rem);font-weight:800;color:#fff;line-height:1" id="stat-lost">0</div>
+        <div class="mt-2" style="font-size:.82rem;color:rgba(255,255,255,.6)">Items Reported Lost</div>
       </div>
       <div class="col-6 col-md-3">
-        <div class="fs-2 fw-800 text-white" id="stat-found">—</div>
-        <div class="mt-1" style="font-size:.85rem;color:rgba(255,255,255,.65)">Items Reported Found</div>
+        <div style="font-size:clamp(1.6rem,4vw,2.5rem);font-weight:800;color:#fff;line-height:1" id="stat-found">0</div>
+        <div class="mt-2" style="font-size:.82rem;color:rgba(255,255,255,.6)">Items Reported Found</div>
       </div>
       <div class="col-6 col-md-3">
-        <div class="fs-2 fw-800 text-white" id="stat-returned">—</div>
-        <div class="mt-1" style="font-size:.85rem;color:rgba(255,255,255,.65)">Successfully Returned</div>
+        <div style="font-size:clamp(1.6rem,4vw,2.5rem);font-weight:800;color:var(--accent);line-height:1" id="stat-returned">0</div>
+        <div class="mt-2" style="font-size:.82rem;color:rgba(255,255,255,.6)">Successfully Returned</div>
       </div>
     </div>
   </div>
@@ -352,6 +359,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Load stats
   await loadStats();
+  startLiveStats();
 
   // Load recent items
   await loadRecentItems('lost',  'recent-lost-grid',  4);
@@ -391,8 +399,8 @@ async function loadStats() {
   try {
     const [usersRes, lostRes, foundRes, returnedRes] = await Promise.all([
       supabaseClient.from('profiles').select('*', { count: 'exact', head: true }),
-      supabaseClient.from('items').select('*', { count: 'exact', head: true }).eq('type', 'lost'),
-      supabaseClient.from('items').select('*', { count: 'exact', head: true }).eq('type', 'found'),
+      supabaseClient.from('items').select('*', { count: 'exact', head: true }).eq('type', 'lost').neq('status','rejected'),
+      supabaseClient.from('items').select('*', { count: 'exact', head: true }).eq('type', 'found').neq('status','rejected'),
       supabaseClient.from('item_returns').select('*', { count: 'exact', head: true }),
     ]);
     animateCount('stat-users',    usersRes.count    || 0);
@@ -400,12 +408,46 @@ async function loadStats() {
     animateCount('stat-found',    foundRes.count    || 0);
     animateCount('stat-returned', returnedRes.count || 0);
   } catch (_) {
-    // Stats not available yet — show zeroes
     ['stat-users','stat-lost','stat-found','stat-returned'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.textContent = '0';
     });
   }
+}
+
+// Real-time live counter updates
+function startLiveStats() {
+  // Update instantly when a new user registers
+  supabaseClient.channel('live-stats-profiles')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'profiles' }, () => {
+      refreshCount('stat-users',
+        supabaseClient.from('profiles').select('*', { count: 'exact', head: true }));
+    }).subscribe();
+
+  // Update when item is reported lost
+  supabaseClient.channel('live-stats-lost')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'items' }, () => {
+      refreshCount('stat-lost',
+        supabaseClient.from('items').select('*', { count: 'exact', head: true }).eq('type','lost').neq('status','rejected'));
+      refreshCount('stat-found',
+        supabaseClient.from('items').select('*', { count: 'exact', head: true }).eq('type','found').neq('status','rejected'));
+    }).subscribe();
+
+  // Update when item is returned
+  supabaseClient.channel('live-stats-returns')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'item_returns' }, () => {
+      refreshCount('stat-returned',
+        supabaseClient.from('item_returns').select('*', { count: 'exact', head: true }));
+    }).subscribe();
+}
+
+async function refreshCount(id, query) {
+  const { count } = await query;
+  const el = document.getElementById(id);
+  if (!el) return;
+  const current = parseInt(el.textContent.replace(/,/g, '')) || 0;
+  const target  = count || 0;
+  if (current !== target) animateCount(id, target);
 }
 
 function animateCount(id, target) {
