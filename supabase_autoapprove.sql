@@ -40,3 +40,11 @@ FROM public.items WHERE is_approved = true;
 DROP POLICY IF EXISTS "item_images_select" ON public.item_images;
 CREATE POLICY "item_images_select"
   ON public.item_images FOR SELECT USING (TRUE);
+
+-- Fix item_images INSERT policy so any authenticated user can insert their own item images
+DROP POLICY IF EXISTS "item_images_insert" ON public.item_images;
+CREATE POLICY "item_images_insert"
+  ON public.item_images FOR INSERT
+  WITH CHECK (
+    auth.role() = 'authenticated'
+  );

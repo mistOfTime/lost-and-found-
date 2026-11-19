@@ -258,20 +258,34 @@ document.getElementById('report-form').addEventListener('submit', async (e) => {
 
     // 2. Upload image if provided
     if (imageFile) {
-      const ext  = imageFile.name.split('.').pop();
+      const ext  = imageFile.name.split('.').pop().toLowerCase();
       const path = `${currentUser.id}/${item.id}.${ext}`;
-      const { error: uploadErr } = await supabaseClient.storage
+      const { data: uploadData, error: uploadErr } = await supabaseClient.storage
         .from('item-images')
-        .upload(path, imageFile, { upsert: true });
+        .upload(path, imageFile, { upsert: true, contentType: imageFile.type });
 
-      if (!uploadErr) {
-        const { data: urlData } = supabaseClient.storage.from('item-images').getPublicUrl(path);
-        await supabaseClient.from('item_images').insert({
-          item_id:      item.id,
-          storage_path: path,
-          url:          urlData.publicUrl,
-          is_primary:   true,
-        });
+      if (uploadErr) {
+        console.error('Image upload error:', uploadErr.message);
+      } else {
+        // Get public URL
+        const { data: urlData } = supabaseClient.storage
+          .from('item-images')
+          .getPublicUrl(path);
+
+        const publicUrl = urlData?.publicUrl;
+        console.log('Uploaded image URL:', publicUrl);
+
+        if (publicUrl) {
+          const { error: imgInsertErr } = await supabaseClient
+            .from('item_images')
+            .insert({
+              item_id:      item.id,
+              storage_path: path,
+              url:          publicUrl,
+              is_primary:   true,
+            });
+          if (imgInsertErr) console.error('item_images insert error:', imgInsertErr.message);
+        }
       }
     }
 
