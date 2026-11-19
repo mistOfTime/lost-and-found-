@@ -3,6 +3,13 @@
    CIT-U Lost & Found System
    ============================================================ */
 
+/* Force Font Awesome icons to render correctly */
+.fa, .fas, .far, .fal, .fab, .fa-solid, .fa-regular, .fa-brands {
+  font-display: block !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 /* ---------- CSS Custom Properties — Maroon & Gold Theme ---------- */
 :root {
   --primary:        #800000;   /* CIT-U Maroon */
@@ -1182,3 +1189,94 @@ h1, h2, h3, h4, h5, h6 {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--gray-400); }
+
+/* ============================================================
+   MOBILE RESPONSIVENESS FIXES
+   ============================================================ */
+
+/* Dashboard header — stack buttons on small screens */
+@media (max-width: 575.98px) {
+  .page-header { flex-direction: column !important; gap: .8rem; }
+  .page-header .d-flex { width: 100%; }
+  .page-header .btn-primary-custom,
+  .page-header .btn-outline-custom { flex: 1; justify-content: center; font-size: .82rem; padding: .5rem .6rem; }
+
+  /* Stat cards — smaller text on mobile */
+  .stat-card { padding: .9rem .8rem; }
+  .stat-info h3 { font-size: 1.3rem; }
+  .stat-info p  { font-size: .7rem; }
+  .stat-icon { width: 42px; height: 42px; font-size: 1rem; }
+
+  /* Navbar brand — shorten on tiny screens */
+  .brand-text .brand-title { font-size: .78rem; }
+  .brand-text .brand-sub   { display: none; }
+
+  /* Hero title */
+  .hero-title { font-size: 1.6rem; }
+
+  /* Auth card padding */
+  .auth-card { padding: 1.5rem 1rem; }
+
+  /* Quick action cards — 2 per row */
+  .quick-action-card { padding: .9rem .5rem; }
+  .quick-action-card h6 { font-size: .78rem; }
+  .quick-action-card p  { display: none; }
+}
+
+@media (max-width: 767.98px) {
+  /* Item cards — full width description */
+  .item-card-desc { -webkit-line-clamp: 3; }
+
+  /* Tables — horizontal scroll */
+  .table-responsive-custom { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Messages layout */
+  .messages-layout { flex-direction: column; height: auto; min-height: 100vh; }
+  .convo-list { width: 100%; height: 200px; border-right: none; border-bottom: 1.5px solid var(--gray-200); }
+  .chat-area  { height: 60vh; }
+
+  /* Dashboard card headers */
+  .dash-card-header { flex-wrap: wrap; gap: .4rem; }
+
+  /* Sidebar brand on tablet */
+  .sidebar { width: 220px; }
+  .main-content { margin-left: 220px; }
+}
+
+@media (max-width: 991.98px) {
+  .sidebar { width: var(--sidebar-width); transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .main-content { margin-left: 0 !important; }
+}
+
+/* Fix icon rendering — ensure FA icons never show as boxes */
+i[class*="fa-"] {
+  font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands", sans-serif !important;
+  font-style: normal !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  display: inline-block;
+  font-variant: normal;
+  text-rendering: auto;
+  line-height: 1;
+}
+
+/* Prevent layout break on very long words */
+.item-card-title,
+.item-card-desc,
+.stat-info p,
+.convo-info .convo-name {
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Make tables scroll horizontally on mobile */
+.dash-card div[style*="overflow-x"] {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Navbar user name — hide on very small screens */
+@media (max-width: 400px) {
+  #nav-name { display: none !important; }
+  .wlf-navbar .navbar-brand .brand-text { max-width: 140px; }
+}
