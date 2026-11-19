@@ -248,7 +248,8 @@ document.getElementById('report-form').addEventListener('submit', async (e) => {
         brand:         brand || null,
         color:         color || null,
         distinguishing_features: features || null,
-        status: 'pending',
+        status:      currentType,   // 'lost' or 'found' — live immediately
+        is_approved: true,          // no admin approval required
       })
       .select()
       .single();
@@ -285,7 +286,7 @@ document.getElementById('report-form').addEventListener('submit', async (e) => {
 
     setLoading(false);
     alertEl.className = 'alert-custom success';
-    alertEl.innerHTML = `<i class="fa-solid fa-check-circle"></i><span>Report submitted! Pending admin approval. <a href="item-details.html?id=${item.id}">View your report →</a></span>`;
+    alertEl.innerHTML = `<i class="fa-solid fa-check-circle"></i><span>Report submitted and published! <a href="item-details.html?id=${item.id}">View your report →</a></span>`;
     alertEl.style.display = 'flex';
 
     document.getElementById('report-form').reset();
