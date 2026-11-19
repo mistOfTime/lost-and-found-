@@ -119,7 +119,7 @@ async function loadItems() {
 
   let query = supabaseClient
     .from('items')
-    .select('id, name, type, status, category, location, date_occurred, created_at, profiles(full_name)')
+    .select('id, name, type, status, category, location, date_occurred, created_at, reporter_id')
     .order('created_at', { ascending: false });
 
   if (q)      query = query.ilike('name', `%${q}%`);
@@ -139,7 +139,7 @@ async function loadItems() {
       <td><span class="badge-${item.type}" style="font-size:.74rem">${capitalize(item.type)}</span></td>
       <td style="font-size:.82rem">${sanitize(item.category)}</td>
       <td style="font-size:.82rem">${sanitize(item.location)}</td>
-      <td style="font-size:.8rem;color:var(--gray-600)">${sanitize(item.profiles?.full_name || '—')}</td>
+      <td style="font-size:.8rem;color:var(--gray-600)">—</td>
       <td style="font-size:.78rem;color:var(--gray-500)">${formatDate(item.date_occurred)}</td>
       <td><span class="badge-${item.status}" style="font-size:.74rem">${capitalize(item.status)}</span></td>
       <td>
