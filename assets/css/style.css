@@ -1280,3 +1280,89 @@ i[class*="fa-"] {
   #nav-name { display: none !important; }
   .wlf-navbar .navbar-brand .brand-text { max-width: 140px; }
 }
+
+/* ============================================================
+   TEXT OVERFLOW & OVERLAP FIXES
+   ============================================================ */
+
+/* Hero subtitle — no overlap on small screens */
+.hero-subtitle {
+  font-size: clamp(.85rem, 2.5vw, 1.1rem);
+  color: var(--gray-300);
+  margin-bottom: 1.8rem;
+  line-height: 1.6;
+}
+
+/* Auth left panel — prevent text overflow */
+.auth-left h2 {
+  font-size: clamp(1.3rem, 3vw, 1.8rem);
+  word-break: keep-all;
+}
+.auth-left p {
+  font-size: clamp(.8rem, 1.5vw, .95rem);
+  color: rgba(255,255,255,.75);
+  line-height: 1.5;
+}
+
+/* Section titles — prevent overlap */
+.section-title {
+  font-size: clamp(1.2rem, 3vw, 1.75rem);
+  word-break: break-word;
+}
+
+/* Footer brand text */
+.wlf-footer .footer-brand {
+  font-size: clamp(.9rem, 2vw, 1.1rem);
+  flex-wrap: wrap;
+  gap: .4rem;
+}
+
+/* Quick action card text */
+.quick-action-card h6 {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Navbar brand — prevent title overflow */
+.brand-text .brand-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+/* Page headers on small screens */
+.page-header h1 {
+  font-size: clamp(1.1rem, 3vw, 1.5rem);
+  word-break: break-word;
+}
+
+/* Item card title — no overflow */
+.item-card-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+/* Stat card label — truncate if too long */
+.stat-info p {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: .75rem;
+}
+
+/* How it works section paragraph */
+.how-it-works-text {
+  font-size: clamp(.8rem, 1.5vw, .88rem);
+}
+
+/* Auth subtitle */
+.auth-subtitle {
+  font-size: .88rem;
+  color: var(--gray-500);
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
